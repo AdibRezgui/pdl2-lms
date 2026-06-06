@@ -1,0 +1,52 @@
+version: '3.8'
+
+# Development override — hot reload, no nginx
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: eduai_app_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://eduai_user:eduai_pass@db:5432/eduai_db
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    networks:
+      - eduai_network
+
+  db:
+    image: postgres:16-alpine
+    container_name: eduai_db_dev
+    environment:
+      - POSTGRES_USER=eduai_user
+      - POSTGRES_PASSWORD=eduai_pass
+      - POSTGRES_DB=eduai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - eduai_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: eduai_redis_dev
+    ports:
+      - "6379:6379"
+    networks:
+      - eduai_network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  eduai_network:
+    driver: bridge
