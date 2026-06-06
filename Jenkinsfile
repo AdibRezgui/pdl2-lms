@@ -52,19 +52,10 @@ pipeline {
                     }
                 }
 
-                stage('Landing (Next.js)') {
-                    when { changeset "src/**" }
-                    steps {
-                        sh 'npm ci'
-                        sh 'npm run lint'
-                        sh 'npm run build'
-                    }
-                }
-
                 stage('AI Service (Python)') {
-                    when { changeset "ai-service/**" }
+                    when { changeset "ai_service/**" }
                     steps {
-                        dir('ai-service') {
+                        dir('ai_service') {
                             sh 'pip install -r requirements.txt'
                             sh 'pip install pytest && pytest -v || true'
                         }
@@ -84,10 +75,7 @@ pipeline {
                 sh "docker build -t $REGISTRY/eduai/frontend:$IMAGE_TAG -t $REGISTRY/eduai/frontend:latest ./frontend"
                 sh "docker push $REGISTRY/eduai/frontend:$IMAGE_TAG && docker push $REGISTRY/eduai/frontend:latest"
 
-                sh "docker build -t $REGISTRY/eduai/landing:$IMAGE_TAG -t $REGISTRY/eduai/landing:latest ."
-                sh "docker push $REGISTRY/eduai/landing:$IMAGE_TAG && docker push $REGISTRY/eduai/landing:latest"
-
-                sh "docker build -t $REGISTRY/eduai/ai:$IMAGE_TAG -t $REGISTRY/eduai/ai:latest ./ai-service"
+                sh "docker build -t $REGISTRY/eduai/ai:$IMAGE_TAG -t $REGISTRY/eduai/ai:latest ./ai_service"
                 sh "docker push $REGISTRY/eduai/ai:$IMAGE_TAG && docker push $REGISTRY/eduai/ai:latest"
             }
         }

@@ -59,25 +59,6 @@ frontend:test:
         - frontend/**/*
 
 # ──────────────────────────────────────────────────────────────────────────────
-# TEST — Next.js landing
-# ──────────────────────────────────────────────────────────────────────────────
-landing:test:
-  stage: test
-  image: node:20-alpine
-  cache:
-    key: npm-landing-$CI_COMMIT_REF_SLUG
-    paths:
-      - node_modules
-  script:
-    - npm ci
-    - npm run lint
-    - npm run build
-  rules:
-    - changes:
-        - src/**/*
-        - package.json
-
-# ──────────────────────────────────────────────────────────────────────────────
 # TEST — Python AI service
 # ──────────────────────────────────────────────────────────────────────────────
 ai:test:
@@ -88,13 +69,13 @@ ai:test:
     paths:
       - .cache/pip
   script:
-    - cd ai-service
+    - cd ai_service
     - pip install --cache-dir ../.cache/pip -r requirements.txt
     - pip install --cache-dir ../.cache/pip pytest
     - pytest -v || true   # placeholder until AI test-suite is added
   rules:
     - changes:
-        - ai-service/**/*
+        - ai_service/**/*
 
 # ──────────────────────────────────────────────────────────────────────────────
 # BUILD — Docker images, pushed to the project registry
@@ -123,17 +104,10 @@ build:frontend:
     - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
     - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
 
-build:landing:
-  <<: *build_definition
-  script:
-    - docker build -t "$CI_REGISTRY_IMAGE/landing:$CI_COMMIT_SHORT_SHA" -t "$CI_REGISTRY_IMAGE/landing:latest" .
-    - docker push "$CI_REGISTRY_IMAGE/landing:$CI_COMMIT_SHORT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/landing:latest"
-
 build:ai:
   <<: *build_definition
   script:
-    - docker build -t "$CI_REGISTRY_IMAGE/ai:$CI_COMMIT_SHORT_SHA" -t "$CI_REGISTRY_IMAGE/ai:latest" ./ai-service
+    - docker build -t "$CI_REGISTRY_IMAGE/ai:$CI_COMMIT_SHORT_SHA" -t "$CI_REGISTRY_IMAGE/ai:latest" ./ai_service
     - docker push "$CI_REGISTRY_IMAGE/ai:$CI_COMMIT_SHORT_SHA"
     - docker push "$CI_REGISTRY_IMAGE/ai:latest"
 
