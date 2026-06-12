@@ -6,11 +6,15 @@ import com.eduai.lms.dto.response.CourseResponse;
 import com.eduai.lms.dto.response.PageResponse;
 import com.eduai.lms.model.User;
 import com.eduai.lms.service.CourseService;
+import com.eduai.lms.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class CourseController {
 
     private final CourseService courseService;
+    private final FileStorageService fileStorageService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> getPublished(
@@ -64,5 +69,14 @@ public class CourseController {
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<CourseResponse>>> myCourses(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getTrainerCourses(user)));
+    }
+
+    @PostMapping(value = "/upload-thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    public ResponseEntity<ApiResponse<String>> uploadThumbnail(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User user) {
+        String url = fileStorageService.storeThumbnail(file);
+        return ResponseEntity.ok(ApiResponse.ok("Image uploadée", url));
     }
 }

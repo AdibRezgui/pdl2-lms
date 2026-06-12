@@ -1,5 +1,6 @@
 package com.eduai.lms.model;
 
+import com.eduai.lms.model.enums.CourseStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -64,6 +65,13 @@ public class Course {
     @Column(name = "is_published")
     @Builder.Default
     private boolean published = false;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CourseStatus status = CourseStatus.DRAFT;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 
     @Column(name = "students_count")
     @Builder.Default

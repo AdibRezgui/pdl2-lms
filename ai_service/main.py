@@ -8,6 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import logging
+import os
+from pathlib import Path
+
+# Load .env file if present
+_env_file = Path(__file__).parent / ".env"
+if _env_file.exists():
+    for line in _env_file.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 
 from models.recommender import CourseRecommender
 from models.analyzer import DifficultyAnalyzer
@@ -79,6 +90,7 @@ class GenerateQuizRequest(BaseModel):
     topic: str
     courseTitle: str = ""
     count: int = 5
+    questionType: str = "single"
 
 class GenerateSummaryRequest(BaseModel):
     topic: str
@@ -132,7 +144,8 @@ def generate_quiz(req: GenerateQuizRequest):
     questions = generator.generate(
         topic=req.topic,
         course_title=req.courseTitle,
-        count=min(req.count, 10),
+        count=min(req.count, 40),
+        question_type=req.questionType.lower(),
     )
     return {"questions": questions, "topic": req.topic, "count": len(questions)}
 

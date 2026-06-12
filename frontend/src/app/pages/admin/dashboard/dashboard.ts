@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { trigger, style, animate, transition } from '@angular/animations';
 import { AuthService } from '../../../core/services/auth';
@@ -26,7 +27,7 @@ import { Sidebar } from '../../../shared/sidebar/sidebar';
         <header class="topbar reveal">
           <div>
             <h1 class="topbar-title">Administration <span class="gt">Système</span></h1>
-            <p class="topbar-sub">Vue globale de la plateforme EduAI Pro</p>
+            <p class="topbar-sub">Vue globale de la plateforme EduAI</p>
           </div>
           <div class="flex items-center gap-2">
             <a routerLink="/admin/users" class="btn-secondary">Gérer les utilisateurs</a>
@@ -37,7 +38,9 @@ import { Sidebar } from '../../../shared/sidebar/sidebar';
         <div class="content">
           <!-- Stats -->
           <div class="stats-row reveal stagger-1">
-            <div class="stat-card lift-on-hover" *ngFor="let s of stats">
+            <a *ngFor="let s of stats" [routerLink]="s['alert'] && +s.value > 0 ? '/admin/courses' : null"
+              class="stat-card lift-on-hover" [class.stat-alert]="s['alert'] && +s.value > 0"
+              style="text-decoration:none">
               <div class="stat-icon" [style.background]="s.bg" [style.boxShadow]="'0 6px 20px '+s.glow">
                 <span [innerHTML]="s.svg"></span>
               </div>
@@ -45,7 +48,8 @@ import { Sidebar } from '../../../shared/sidebar/sidebar';
                 <p class="stat-value">{{ s.value }}</p>
                 <p class="stat-label">{{ s.label }}</p>
               </div>
-            </div>
+              <div *ngIf="s['alert'] && +s.value > 0" class="alert-dot"></div>
+            </a>
           </div>
 
           <div class="three-col">
@@ -125,7 +129,11 @@ import { Sidebar } from '../../../shared/sidebar/sidebar';
     .content { padding:26px 30px;display:flex;flex-direction:column;gap:22px; }
     .stats-row { display:grid;grid-template-columns:repeat(4,1fr);gap:16px; }
     @media(max-width:1100px){.stats-row{grid-template-columns:repeat(2,1fr)}}
-    .stat-card { display:flex;align-items:center;gap:14px;padding:18px;border-radius:22px;background:rgba(255,255,255,.6);border:1px solid rgba(167,139,250,.14);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 28px rgba(167,139,250,.12); }
+    .stat-card { display:flex;align-items:center;gap:14px;padding:18px;border-radius:22px;background:rgba(255,255,255,.6);border:1px solid rgba(167,139,250,.14);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 28px rgba(167,139,250,.12);position:relative;cursor:default; }
+    .stat-alert { border-color:rgba(245,165,36,.35) !important;background:rgba(255,250,240,.7) !important;cursor:pointer !important; }
+    .stat-alert:hover { box-shadow:0 8px 28px rgba(245,165,36,.2) !important; }
+    .alert-dot { position:absolute;top:12px;right:14px;width:9px;height:9px;border-radius:50%;background:#f5a524;box-shadow:0 0 0 3px rgba(245,165,36,.25);animation:pulse-dot 1.8s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 3px rgba(245,165,36,.25)} 50%{box-shadow:0 0 0 6px rgba(245,165,36,.12)} }
     .stat-icon { width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
     .stat-value { font-size:26px;font-weight:800;color:#221f2c;line-height:1;font-family:'Fraunces',Georgia,serif; }
     .stat-label { font-size:12px;color:#948da3;margin-top:4px; }
@@ -144,10 +152,10 @@ export class AdminDashboard implements OnInit {
   recentUsers = signal<any[]>([]);
 
   stats = [
-    { label: 'Utilisateurs',  value: '—', bg: 'rgba(167,139,250,.16)', glow: 'rgba(167,139,250,.22)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b6ef2" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
-    { label: 'Cours actifs',  value: '—', bg: 'rgba(110,231,183,.18)', glow: 'rgba(110,231,183,.24)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' },
-    { label: 'Inscriptions',  value: '—', bg: 'rgba(251,114,153,.14)', glow: 'rgba(251,114,153,.2)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb7299" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
-    { label: 'Formateurs',    value: '—', bg: 'rgba(245,165,36,.14)',  glow: 'rgba(245,165,36,.2)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>' },
+    { label: 'Utilisateurs',      value: '—', bg: 'rgba(167,139,250,.16)', glow: 'rgba(167,139,250,.22)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b6ef2" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+    { label: 'Cours publiés',      value: '—', bg: 'rgba(110,231,183,.18)', glow: 'rgba(110,231,183,.24)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' },
+    { label: 'Inscriptions',       value: '—', bg: 'rgba(251,114,153,.14)', glow: 'rgba(251,114,153,.2)', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb7299" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
+    { label: 'En attente',         value: '—', bg: 'rgba(245,165,36,.14)',  glow: 'rgba(245,165,36,.2)',  svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', alert: true },
   ];
 
   health = [
@@ -159,28 +167,49 @@ export class AdminDashboard implements OnInit {
 
   quickActions = [
     { label: 'Gérer les utilisateurs', path: '/admin/users',    svg: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
-    { label: 'Voir les analytics',     path: '/admin/analytics',svg: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' },
+    { label: 'Valider les cours',       path: '/admin/courses',  svg: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="9 11 12 14 16 9"/></svg>' },
+    { label: 'Voir les analytics',      path: '/admin/analytics',svg: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' },
   ];
 
   roleLabel(r: string) { return { STUDENT: 'Stagiaire', TRAINER: 'Formateur', ADMIN: 'Admin' }[r] ?? r; }
   roleColor(r: string) { return { STUDENT: 'linear-gradient(135deg,#a78bfa,#8b6ef2)', TRAINER: 'linear-gradient(135deg,#fb7299,#f25c78)', ADMIN: 'linear-gradient(135deg,#f5a524,#e2940f)' }[r] ?? 'rgba(167,139,250,.18)'; }
 
-  constructor(public auth: AuthService, private api: ApiService) {}
+  constructor(public auth: AuthService, private api: ApiService, private http: HttpClient) {}
 
   ngOnInit() {
+    this.http.get<any>('/api/actuator/health').subscribe({
+      next: (res: any) => {
+        const dbOk = res?.components?.db?.status === 'UP';
+        const diskOk = res?.components?.diskSpace?.status === 'UP';
+        this.health[0] = { ...this.health[0], ok: res?.status === 'UP', status: res?.status === 'UP' ? 'Opérationnel' : 'Indisponible' };
+        this.health[1] = { ...this.health[1], ok: dbOk, status: dbOk ? 'Connectée' : 'Déconnectée' };
+        this.health[3] = { ...this.health[3], ok: diskOk, status: diskOk ? 'Disponible' : 'Limité' };
+      },
+      error: () => {
+        this.health[0] = { ...this.health[0], ok: false, status: 'Indisponible' };
+        this.health[1] = { ...this.health[1], ok: false, status: 'Inconnue' };
+        this.health[3] = { ...this.health[3], ok: false, status: 'Inconnue' };
+      },
+    });
+
+    this.api.get<any>('/ai/recommend').subscribe({
+      next: () => { this.health[2] = { ...this.health[2], ok: true, status: 'En ligne' }; },
+      error: () => { this.health[2] = { ...this.health[2], ok: false, status: 'Indisponible' }; },
+    });
+
     this.api.get<any>('/admin/stats').subscribe({
       next: (res: any) => {
-        const d = res?.data ?? {};
+        const d = res ?? {};
         this.stats[0].value = String(d.totalUsers ?? 0);
-        this.stats[1].value = String(d.totalCourses ?? 0);
+        this.stats[1].value = String(d.publishedCourses ?? 0);
         this.stats[2].value = String(d.totalEnrollments ?? 0);
-        this.stats[3].value = String(d.totalTrainers ?? 0);
+        this.stats[3].value = String(d.pendingCourses ?? 0);
       },
       error: () => {},
     });
 
     this.api.get<any>('/admin/users?size=8&sort=createdAt,desc').subscribe({
-      next: (res: any) => { this.recentUsers.set(res?.data?.content ?? res?.data ?? []); this.loading.set(false); },
+      next: (res: any) => { this.recentUsers.set(res?.content ?? res ?? []); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }

@@ -28,6 +28,14 @@ public class Quiz {
     @JsonIgnore
     private Course course;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "module_id")
+    @JsonIgnore
+    private CourseModule module;
+
+    @Column(name = "module_id", insertable = false, updatable = false)
+    private UUID moduleId;
+
     @Column(nullable = false)
     private String title;
 

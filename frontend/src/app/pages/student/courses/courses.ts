@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { ApiService } from '../../../core/services/api';
 import { Sidebar } from '../../../shared/sidebar/sidebar';
@@ -8,14 +9,14 @@ import { Sidebar } from '../../../shared/sidebar/sidebar';
 interface Course {
   id: string; title: string; description: string; category: string;
   level: string; price: number; rating?: number; enrollmentCount?: number;
-  trainerName?: string; imageUrl?: string; published: boolean;
+  trainerName?: string; thumbnail?: string; published: boolean;
 }
-interface Enrollment { id: string; course: Course; progressPercentage: number; completed: boolean }
+interface Enrollment { id: string; course: Course; progress: number; completed: boolean }
 
 @Component({
   selector: 'app-student-courses',
   standalone: true,
-  imports: [CommonModule, FormsModule, Sidebar],
+  imports: [CommonModule, FormsModule, RouterLink, Sidebar],
   template: `
     <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
@@ -46,8 +47,11 @@ interface Enrollment { id: string; course: Course; progressPercentage: number; c
 
         <div *ngIf="!loading()" class="grid grid-cols-3 gap-4 mt-5 reveal stagger-2">
           <div *ngFor="let c of filtered()" class="card lift-on-hover p-4 flex flex-col">
-            <div class="course-thumb mb-3">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <div class="course-thumb mb-3"
+              [style.backgroundImage]="c.thumbnail ? 'url(' + (c.thumbnail.startsWith('http') ? c.thumbnail : '/api' + c.thumbnail) + ')' : 'none'"
+              [style.backgroundSize]="'cover'"
+              [style.backgroundPosition]="'center'">
+              <svg *ngIf="!c.thumbnail" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
             </div>
@@ -59,12 +63,17 @@ interface Enrollment { id: string; course: Course; progressPercentage: number; c
             </div>
 
             <!-- Progress if enrolled -->
-            <div *ngIf="getEnrollment(c.id) as enr">
+            <ng-container *ngIf="getEnrollment(c.id) as enr">
               <div class="progress-track mb-1">
-                <div class="progress-fill" [style.width.%]="enr.progressPercentage"></div>
+                <div class="progress-fill" [style.width.%]="enr.progress"></div>
               </div>
-              <p class="text-xs" style="color:#948da3">{{ enr.progressPercentage }}% complété</p>
-            </div>
+              <div class="flex items-center justify-between mt-1">
+                <p class="text-xs" style="color:#948da3">{{ enr.progress }}% complété</p>
+                <a [routerLink]="'/student/learn/' + c.id" class="access-btn">
+                  {{ enr.progress > 0 ? 'Continuer' : 'Commencer' }}
+                </a>
+              </div>
+            </ng-container>
 
             <button *ngIf="!getEnrollment(c.id)" (click)="enroll(c.id)"
               [disabled]="enrolling() === c.id"
@@ -88,6 +97,8 @@ interface Enrollment { id: string; course: Course; progressPercentage: number; c
     .tab-btn:not(.active):hover { color:#221f2c; }
     .course-thumb { width:100%; height:108px; border-radius:18px; background:linear-gradient(135deg,rgba(167,139,250,.85),rgba(251,114,153,.7)); display:flex; align-items:center; justify-content:center; box-shadow:0 12px 30px rgba(167,139,250,.28); }
     .badge-cat { font-size:11px; padding:3px 11px; border-radius:999px; background:rgba(167,139,250,.14); color:#7c5ce0; font-weight:600; }
+    .access-btn { font-size:11px; padding:4px 12px; border-radius:9px; background:linear-gradient(135deg,#a78bfa,#fb7299); color:white; font-weight:600; text-decoration:none; transition:opacity .2s; white-space:nowrap; }
+    .access-btn:hover { opacity:.85; }
   `],
 })
 export class StudentCourses implements OnInit {
@@ -123,10 +134,10 @@ export class StudentCourses implements OnInit {
   constructor(private auth: AuthService, private api: ApiService) {}
 
   ngOnInit() {
-    this.api.get<Course[]>('/courses/published').subscribe({
-      next: data => { this.allCourses.set(data ?? []); },
+    this.api.get<any>('/courses?size=100').subscribe({
+      next: data => { this.allCourses.set(data?.content ?? []); },
     });
-    this.api.get<Enrollment[]>('/enrollments/my').subscribe({
+    this.api.get<Enrollment[]>('/enrollments/me').subscribe({
       next: data => { this.enrollments.set(data ?? []); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -134,7 +145,7 @@ export class StudentCourses implements OnInit {
 
   enroll(courseId: string) {
     this.enrolling.set(courseId);
-    this.api.post<Enrollment>(`/enrollments/${courseId}`).subscribe({
+    this.api.post<Enrollment>('/enrollments', { courseId }).subscribe({
       next: enr => {
         this.enrollments.update(list => [...list, enr]);
         this.enrolling.set(null);

@@ -25,7 +25,7 @@ public class ChatController {
             @Valid @RequestBody ChatRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.ok(
-            chatService.saveAndRespond(request.getMessage(), user)));
+            chatService.saveAndRespond(request.getMessage(), request.getHistory(), user)));
     }
 
     @GetMapping("/history")

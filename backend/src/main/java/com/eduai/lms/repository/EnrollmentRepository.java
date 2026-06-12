@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     List<Enrollment> findByUser(User user);
     Page<Enrollment> findByCourse(Course course, Pageable pageable);
+    long countByCourse(Course course);
     Optional<Enrollment> findByUserAndCourse(User user, Course course);
     boolean existsByUserAndCourse(User user, Course course);
 

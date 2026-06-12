@@ -38,6 +38,10 @@ public class CourseModule {
     @Builder.Default
     private int sortOrder = 0;
 
+    @Column(name = "locked")
+    @Builder.Default
+    private boolean locked = false;
+
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     @Builder.Default

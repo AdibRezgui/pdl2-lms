@@ -12,5 +12,6 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
     List<QuizAttempt> findByUser(User user);
     List<QuizAttempt> findByUserAndQuiz(User user, Quiz quiz);
     long countByUserAndQuiz(User user, Quiz quiz);
+    long countByQuiz(Quiz quiz);
     List<QuizAttempt> findByQuiz(Quiz quiz);
 }

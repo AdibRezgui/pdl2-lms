@@ -34,12 +34,12 @@ public class ChatService {
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
 
-    public ChatMessage saveAndRespond(String userMessage, User user) {
+    public ChatMessage saveAndRespond(String userMessage, List<Map<String, String>> history, User user) {
         ChatMessage userMsg = ChatMessage.builder()
                 .user(user).role("user").content(userMessage).build();
         chatMessageRepository.save(userMsg);
 
-        String reply = callAiService(userMessage, user);
+        String reply = callAiService(userMessage, history != null ? history : List.of(), user);
 
         ChatMessage assistantMsg = ChatMessage.builder()
                 .user(user).role("assistant").content(reply).build();
@@ -51,10 +51,10 @@ public class ChatService {
     }
 
     private Map<String, Object> buildContext(User user) {
-        // Student enrollments
         List<Enrollment> enrollments = enrollmentRepository.findByUser(user);
         Set<UUID> enrolledIds = new HashSet<>();
         List<Map<String, Object>> enrollmentData = new ArrayList<>();
+
         for (Enrollment e : enrollments) {
             enrolledIds.add(e.getCourse().getId());
             Map<String, Object> m = new HashMap<>();
@@ -62,7 +62,9 @@ public class ChatService {
             m.put("courseTitle", e.getCourse().getTitle());
             m.put("category", e.getCourse().getCategory() != null ? e.getCourse().getCategory() : "");
             m.put("level", e.getCourse().getLevel() != null ? e.getCourse().getLevel() : "");
-            m.put("description", e.getCourse().getDescription() != null ? e.getCourse().getDescription() : "");
+            m.put("description", e.getCourse().getDescription() != null
+                    ? e.getCourse().getDescription().substring(0, Math.min(200, e.getCourse().getDescription().length()))
+                    : "");
             m.put("tags", e.getCourse().getTags());
             m.put("trainerName", e.getCourse().getTrainer() != null ? e.getCourse().getTrainer().getName() : "");
             m.put("progress", e.getProgress());
@@ -70,16 +72,18 @@ public class ChatService {
             enrollmentData.add(m);
         }
 
-        // All published courses (not yet enrolled) for recommendations
+        // Available courses not yet enrolled
         List<Map<String, Object>> availableCourses = new ArrayList<>();
-        courseRepository.findByPublishedTrue(PageRequest.of(0, 200)).forEach(c -> {
+        courseRepository.findByPublishedTrue(PageRequest.of(0, 100)).forEach(c -> {
             if (!enrolledIds.contains(c.getId())) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("courseId", c.getId().toString());
                 m.put("title", c.getTitle());
                 m.put("category", c.getCategory() != null ? c.getCategory() : "");
                 m.put("level", c.getLevel() != null ? c.getLevel() : "");
-                m.put("description", c.getDescription() != null ? c.getDescription() : "");
+                m.put("description", c.getDescription() != null
+                        ? c.getDescription().substring(0, Math.min(150, c.getDescription().length()))
+                        : "");
                 m.put("tags", c.getTags());
                 m.put("trainerName", c.getTrainer() != null ? c.getTrainer().getName() : "");
                 m.put("rating", c.getRating());
@@ -88,14 +92,24 @@ public class ChatService {
             }
         });
 
-        // Quiz stats
+        // Quiz attempts — aggregate + per-quiz detail
         List<QuizAttempt> attempts = quizAttemptRepository.findByUser(user);
         long passed = attempts.stream().filter(QuizAttempt::isPassed).count();
         OptionalDouble avg = attempts.stream().mapToInt(QuizAttempt::getScore).average();
 
+        List<Map<String, Object>> quizDetails = new ArrayList<>();
+        for (QuizAttempt a : attempts) {
+            Map<String, Object> q = new HashMap<>();
+            q.put("quizTitle", a.getQuiz().getTitle());
+            q.put("courseTitle", a.getQuiz().getCourse().getTitle());
+            q.put("score", a.getScore());
+            q.put("passed", a.isPassed());
+            q.put("completedAt", a.getCompletedAt() != null ? a.getCompletedAt().toString() : "");
+            quizDetails.add(q);
+        }
+
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("name", user.getName());
-        ctx.put("email", user.getEmail());
         ctx.put("enrollments", enrollmentData);
         ctx.put("availableCourses", availableCourses);
         ctx.put("totalCourses", enrollments.size());
@@ -103,13 +117,15 @@ public class ChatService {
         ctx.put("totalQuizAttempts", attempts.size());
         ctx.put("passedQuizzes", passed);
         ctx.put("averageQuizScore", avg.isPresent() ? Math.round(avg.getAsDouble()) : 0);
+        ctx.put("quizAttempts", quizDetails);
         return ctx;
     }
 
-    private String callAiService(String message, User user) {
+    private String callAiService(String message, List<Map<String, String>> history, User user) {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("message", message);
+            body.put("history", history);
             body.put("userContext", buildContext(user));
 
             HttpHeaders headers = new HttpHeaders();
@@ -133,14 +149,12 @@ public class ChatService {
 
     private String fallbackReply(String message) {
         String lower = message.toLowerCase();
-        if (lower.contains("python") || lower.contains("data"))
-            return "Consultez le catalogue de cours pour trouver une formation sur ce sujet.";
         if (lower.contains("progression") || lower.contains("avancement"))
-            return "Connectez-vous à l'onglet Progression pour voir vos statistiques détaillées.";
+            return "Consultez l'onglet **Progression** pour voir vos statistiques détaillées.";
         if (lower.contains("quiz") || lower.contains("évaluation"))
-            return "Terminez les modules de votre cours avant de passer l'évaluation.";
+            return "Terminez les leçons d'un module avant de passer son évaluation. Score minimum : **70%**.";
         if (lower.contains("certificat"))
-            return "Terminez 100% d'un cours et validez les quiz pour obtenir votre certificat.";
-        return "Je suis EduBot, votre assistant pédagogique. Posez-moi vos questions sur vos cours.";
+            return "Terminez 100% d'un cours et validez tous les quiz pour obtenir votre certificat.";
+        return "Je suis **EduBot**, votre assistant pédagogique. Posez-moi vos questions sur vos cours, votre progression ou vos évaluations.";
     }
 }

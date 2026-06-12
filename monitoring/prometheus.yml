@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: 'eduai-lms'
+    env: 'prod'
+
+rule_files:
+  - "alert-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+
+  # Spring Boot backend
+  - job_name: 'eduai-backend'
+    metrics_path: '/api/actuator/prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['backend:8080']
+        labels:
+          service: 'backend'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AI microservice (FastAPI + prometheus_fastapi_instrumentator)
+  - job_name: 'eduai-ai-service'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['ai-service:8000']
+        labels:
+          service: 'ai-service'

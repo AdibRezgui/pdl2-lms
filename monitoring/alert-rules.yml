@@ -1,0 +1,55 @@
+groups:
+  - name: eduai-lms-alerts
+    interval: 30s
+    rules:
+
+      - alert: BackendDown
+        expr: up{job="eduai-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "EduAI backend is DOWN"
+          description: "Spring Boot backend has been unreachable for more than 1 minute."
+
+      - alert: HighResponseTime
+        expr: http_server_requests_seconds_max{job="eduai-backend"} > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on EduAI backend"
+          description: "Max HTTP response time exceeded 2s for 2 minutes (value={{ $value }}s)."
+
+      - alert: HighErrorRate
+        expr: |
+          rate(http_server_requests_seconds_count{status=~"5..",job="eduai-backend"}[5m])
+          /
+          rate(http_server_requests_seconds_count{job="eduai-backend"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate on backend"
+          description: "More than 5% of requests are returning 5xx errors."
+
+      - alert: HighJvmHeapUsage
+        expr: |
+          jvm_memory_used_bytes{area="heap",job="eduai-backend"}
+          /
+          jvm_memory_max_bytes{area="heap",job="eduai-backend"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap usage above 85%"
+          description: "JVM heap is {{ $value | humanizePercentage }} used."
+
+      - alert: LowDiskSpace
+        expr: disk_free_bytes / disk_total_bytes < 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space below 10%"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining."

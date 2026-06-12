@@ -1,0 +1,158 @@
+version: '3.9'
+
+# Infrastructure services: Jenkins, SonarQube, Nexus, Prometheus, Grafana, ZAP
+# Usage: docker compose -f docker-compose.infra.yml up -d
+
+networks:
+  infra-net:
+    driver: bridge
+
+volumes:
+  jenkins-data:
+  sonar-data:
+  sonar-logs:
+  sonar-extensions:
+  nexus-data:
+  prometheus-data:
+  grafana-data:
+
+services:
+
+  # ── JENKINS ──────────────────────────────────────────────────────────────
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    restart: unless-stopped
+    privileged: true
+    user: root
+    ports:
+      - "9090:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    networks:
+      - infra-net
+
+  # ── SONARQUBE ─────────────────────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    restart: unless-stopped
+    depends_on:
+      - sonar-db
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonar-data:/opt/sonarqube/data
+      - sonar-logs:/opt/sonarqube/logs
+      - sonar-extensions:/opt/sonarqube/extensions
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - infra-net
+
+  sonar-db:
+    image: postgres:15-alpine
+    container_name: sonar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - sonar-data:/var/lib/postgresql/data
+    networks:
+      - infra-net
+
+  # ── NEXUS ─────────────────────────────────────────────────────────────────
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - nexus-data:/nexus-data
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms1g -Xmx2g
+        -XX:MaxDirectMemorySize=2g
+        -Djava.util.prefs.userRoot=/nexus-data/javaprefs
+    networks:
+      - infra-net
+
+  # ── PROMETHEUS ────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - infra-net
+
+  # ── GRAFANA ───────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: eduai2024
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "http://localhost:3001"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+    depends_on:
+      - prometheus
+    networks:
+      - infra-net
+
+  # ── OWASP ZAP ─────────────────────────────────────────────────────────────
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: zap
+    restart: "no"
+    volumes:
+      - ./zap-reports:/zap/wrk:rw
+      - ./zap/zap.conf:/zap/zap.conf:ro
+    command: >
+      zap-api-scan.py
+        -t http://backend:8080/api/v3/api-docs
+        -f openapi
+        -r zap-report.html
+        -J zap-report.json
+        -z "-config scanner.attackStrength=LOW"
+        -l WARN
+    networks:
+      - infra-net
+    profiles:
+      - zap

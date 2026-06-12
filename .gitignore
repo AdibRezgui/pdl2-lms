@@ -8,3 +8,8 @@ __pycache__/
 .env
 .env.local
 uploads-dev/
+
+*_tok.json
+h2cookies.txt
+*.log
+.claude/

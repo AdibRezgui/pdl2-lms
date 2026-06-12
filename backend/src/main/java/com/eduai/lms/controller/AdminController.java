@@ -1,6 +1,7 @@
 package com.eduai.lms.controller;
 
 import com.eduai.lms.dto.response.ApiResponse;
+import com.eduai.lms.dto.response.CourseResponse;
 import com.eduai.lms.dto.response.PageResponse;
 import com.eduai.lms.dto.response.UserResponse;
 import com.eduai.lms.model.enums.UserRole;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,5 +53,28 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable UUID id) {
         adminService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.ok("Utilisateur supprimé", null));
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> allCourses() {
+        return ResponseEntity.ok(ApiResponse.ok(adminService.getAllCourses()));
+    }
+
+    @GetMapping("/courses/pending")
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> pendingCourses() {
+        return ResponseEntity.ok(ApiResponse.ok(adminService.getPendingCourses()));
+    }
+
+    @PutMapping("/courses/{id}/approve")
+    public ResponseEntity<ApiResponse<CourseResponse>> approveCourse(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok("Cours approuvé", adminService.approveCourse(id)));
+    }
+
+    @PutMapping("/courses/{id}/reject")
+    public ResponseEntity<ApiResponse<CourseResponse>> rejectCourse(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body) {
+        String reason = body.getOrDefault("reason", "Non conforme aux standards de la plateforme");
+        return ResponseEntity.ok(ApiResponse.ok("Cours rejeté", adminService.rejectCourse(id, reason)));
     }
 }

@@ -142,7 +142,19 @@ export class StudentChat implements OnInit, AfterViewChecked {
 
   constructor(public auth: AuthService, private api: ApiService) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.api.get<any[]>('/chat/history').subscribe({
+      next: (history: any[]) => {
+        if (history?.length) {
+          this.messages.set(history.map((m: any) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content ?? '',
+          })));
+        }
+      },
+      error: () => {},
+    });
+  }
 
   ngAfterViewChecked() {
     const el = this.scrollContainer?.nativeElement;
@@ -156,20 +168,23 @@ export class StudentChat implements OnInit, AfterViewChecked {
   toHtml(text: string): string {
     return text
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
       .replace(/\n/g, '<br>');
   }
 
   send() {
     const text = this.inputText.trim();
     if (!text) return;
+
+    const history = this.messages().map(m => ({ role: m.role, content: m.content }));
     this.messages.update(m => [...m, { role: 'user', content: text }]);
     this.inputText = '';
     this.typing.set(true);
 
-    this.api.post<any>('/chat', { message: text }).subscribe({
+    this.api.post<any>('/chat', { message: text, history }).subscribe({
       next: (res: any) => {
         this.typing.set(false);
-        // ApiService already extracts r.data, so res IS the ChatMessage entity
         const reply = res?.content ?? res?.message ?? res ?? 'Aucune réponse reçue.';
         this.messages.update(m => [...m, { role: 'assistant', content: String(reply) }]);
       },

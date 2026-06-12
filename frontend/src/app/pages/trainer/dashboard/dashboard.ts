@@ -163,7 +163,7 @@ export class TrainerDashboard implements OnInit {
   ngOnInit() {
     this.api.get<any>('/trainer/analytics').subscribe({
       next: (res: any) => {
-        const d = res?.data ?? {};
+        const d = res ?? {};
         this.stats[0].value = String(d.totalCourses ?? 0);
         this.stats[1].value = String(d.totalStudents ?? 0);
         this.stats[2].value = (d.avgCompletionRate ?? 0) + '%';
@@ -178,7 +178,7 @@ export class TrainerDashboard implements OnInit {
     });
 
     this.api.get<any[]>('/courses/my').subscribe({
-      next: (res: any) => { this.courses.set((res?.data ?? []).slice(0, 5)); this.loading.set(false); },
+      next: (res: any) => { this.courses.set((res ?? []).slice(0, 5)); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }

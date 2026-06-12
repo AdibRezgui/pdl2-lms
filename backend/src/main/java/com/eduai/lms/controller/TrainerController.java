@@ -1,15 +1,8 @@
 package com.eduai.lms.controller;
 
 import com.eduai.lms.dto.response.ApiResponse;
-import com.eduai.lms.model.Course;
-import com.eduai.lms.model.Enrollment;
-import com.eduai.lms.model.Quiz;
-import com.eduai.lms.model.QuizAttempt;
-import com.eduai.lms.model.User;
-import com.eduai.lms.repository.CourseRepository;
-import com.eduai.lms.repository.EnrollmentRepository;
-import com.eduai.lms.repository.QuizAttemptRepository;
-import com.eduai.lms.repository.QuizRepository;
+import com.eduai.lms.model.*;
+import com.eduai.lms.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,21 +22,37 @@ public class TrainerController {
     private final EnrollmentRepository enrollmentRepository;
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final ModuleRepository moduleRepository;
+    private final LessonRepository lessonRepository;
+    private final LessonCompletionRepository lessonCompletionRepository;
 
-    /** All students enrolled in the trainer's courses, with per-course progress */
+    /** All students enrolled in the trainer's courses, with per-course and per-module detail */
     @GetMapping("/students")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> myStudents(
             @AuthenticationPrincipal User trainer) {
 
         List<Course> courses = courseRepository.findByTrainer(trainer);
-
-        // Collect all enrollments for trainer's courses
         Map<UUID, Map<String, Object>> studentMap = new LinkedHashMap<>();
 
         for (Course course : courses) {
             List<Enrollment> enrollments = new ArrayList<>();
             enrollmentRepository.findByCourse(course, org.springframework.data.domain.Pageable.unpaged())
                     .forEach(enrollments::add);
+
+            // Load modules + their quizzes once per course
+            List<CourseModule> modules = moduleRepository.findByCourseOrderBySortOrderAsc(course);
+            // Map moduleId → module quiz (null if none)
+            Map<UUID, Quiz> moduleQuizMap = new HashMap<>();
+            for (CourseModule mod : modules) {
+                quizRepository.findByCourse(course).stream()
+                        .filter(q -> q.getModule() != null && q.getModule().getId().equals(mod.getId()))
+                        .findFirst()
+                        .ifPresent(q -> moduleQuizMap.put(mod.getId(), q));
+            }
+            // Final quiz for the course
+            Quiz finalQuiz = quizRepository.findByCourse(course).stream()
+                    .filter(q -> q.getModule() == null)
+                    .findFirst().orElse(null);
 
             for (Enrollment e : enrollments) {
                 User student = e.getUser();
@@ -52,39 +61,98 @@ public class TrainerController {
                     m.put("id", student.getId().toString());
                     m.put("name", student.getName());
                     m.put("email", student.getEmail());
-                    m.put("avatar", student.getAvatar());
-                    m.put("joinedAt", student.getCreatedAt() != null ? student.getCreatedAt().toString() : "");
                     m.put("enrollments", new ArrayList<Map<String, Object>>());
                     return m;
                 });
 
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> eList = (List<Map<String, Object>>) studentMap.get(student.getId()).get("enrollments");
+                // Get all quiz attempts by this student for this course's quizzes
+                List<QuizAttempt> allAttempts = quizAttemptRepository.findByUser(student).stream()
+                        .filter(a -> a.getQuiz().getCourse().getId().equals(course.getId()))
+                        .collect(Collectors.toList());
+
+                // Get completed lesson IDs for this student
+                List<LessonCompletion> completions = lessonCompletionRepository.findByUser(student);
+                Set<UUID> completedLessonIds = completions.stream()
+                        .map(lc -> lc.getLesson().getId())
+                        .collect(Collectors.toSet());
+
+                // Build per-module data
+                List<Map<String, Object>> modulesData = new ArrayList<>();
+                for (CourseModule mod : modules) {
+                    List<Lesson> lessons = lessonRepository.findByModuleOrderBySortOrderAsc(mod);
+                    long lessonTotal = lessons.size();
+                    long lessonDone = lessons.stream()
+                            .filter(l -> completedLessonIds.contains(l.getId())).count();
+
+                    // Quiz status for this module
+                    Quiz mQuiz = moduleQuizMap.get(mod.getId());
+                    Map<String, Object> quizStatus = buildQuizStatus(mQuiz, allAttempts);
+
+                    Map<String, Object> modData = new HashMap<>();
+                    modData.put("moduleId", mod.getId().toString());
+                    modData.put("moduleTitle", mod.getTitle());
+                    modData.put("lessonTotal", lessonTotal);
+                    modData.put("lessonDone", lessonDone);
+                    modData.put("quiz", quizStatus);
+                    // Module is "done" if all lessons completed AND quiz passed (or no quiz)
+                    boolean modDone = lessonDone == lessonTotal && lessonTotal > 0
+                            && (mQuiz == null || Boolean.TRUE.equals(quizStatus.get("passed")));
+                    modData.put("done", modDone);
+                    modulesData.add(modData);
+                }
+
+                // Final quiz status
+                Map<String, Object> finalQuizStatus = buildQuizStatus(finalQuiz, allAttempts);
+
                 Map<String, Object> eData = new HashMap<>();
                 eData.put("courseId", course.getId().toString());
                 eData.put("courseTitle", course.getTitle());
                 eData.put("progress", e.getProgress());
                 eData.put("completed", e.isCompleted());
+                eData.put("badgeEarned", e.isBadgeEarned());
                 eData.put("lastAccessedAt", e.getLastAccessedAt() != null ? e.getLastAccessedAt().toString() : null);
+                eData.put("modules", modulesData);
+                eData.put("finalQuiz", finalQuizStatus);
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> eList = (List<Map<String, Object>>) studentMap.get(student.getId()).get("enrollments");
                 eList.add(eData);
             }
         }
 
-        // Compute avgProgress per student and AI insights
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> s : studentMap.values()) {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> enrs = (List<Map<String, Object>>) s.get("enrollments");
             int avg = enrs.isEmpty() ? 0 : (int) enrs.stream()
-                    .mapToInt(e -> (int) e.get("progress"))
-                    .average().orElse(0);
+                    .mapToInt(e -> (int) e.get("progress")).average().orElse(0);
             s.put("avgProgress", avg);
             s.put("coursesCount", enrs.size());
             result.add(s);
         }
-
         result.sort(Comparator.comparingInt(s -> -((int) s.get("avgProgress"))));
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    private Map<String, Object> buildQuizStatus(Quiz quiz, List<QuizAttempt> attempts) {
+        Map<String, Object> status = new HashMap<>();
+        if (quiz == null) {
+            status.put("exists", false);
+            return status;
+        }
+        status.put("exists", true);
+        status.put("quizId", quiz.getId().toString());
+        status.put("quizTitle", quiz.getTitle());
+        List<QuizAttempt> quizAttempts = attempts.stream()
+                .filter(a -> a.getQuiz().getId().equals(quiz.getId()))
+                .collect(Collectors.toList());
+        status.put("attempted", !quizAttempts.isEmpty());
+        boolean passed = quizAttempts.stream().anyMatch(a -> a.isPassed() && a.getScore() >= 70);
+        status.put("passed", passed);
+        int bestScore = quizAttempts.stream().mapToInt(QuizAttempt::getScore).max().orElse(0);
+        status.put("bestScore", bestScore);
+        status.put("attempts", quizAttempts.size());
+        return status;
     }
 
     /** Analytics summary for trainer's courses */

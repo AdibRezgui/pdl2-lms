@@ -5,13 +5,13 @@ import { ApiService } from '../../../core/services/api';
 import { Sidebar } from '../../../shared/sidebar/sidebar';
 
 interface Attempt {
-  id: string; score: number; maxScore: number; passed: boolean;
-  quiz: { title: string; course: { title: string; category: string } };
-  attemptedAt: string;
+  id: string; score: number; passed: boolean;
+  quiz: { title: string };
+  completedAt: string;
 }
 interface Enrollment {
   course: { title: string; category: string };
-  progressPercentage: number; completed: boolean;
+  progress: number; completed: boolean;
 }
 
 @Component({
@@ -61,11 +61,11 @@ interface Enrollment {
                   <span class="ml-2 badge-cat">{{ e.course.category }}</span>
                 </div>
                 <span class="text-sm font-bold" [style.color]="e.completed ? '#1f9d6f' : '#8b6ef2'">
-                  {{ e.progressPercentage }}%
+                  {{ e.progress }}%
                 </span>
               </div>
               <div class="progress-track">
-                <div class="progress-fill" [style.background]="e.completed ? 'linear-gradient(90deg,#6ee7b7,#34d399)' : ''" [style.width.%]="e.progressPercentage"></div>
+                <div class="progress-fill" [style.background]="e.completed ? 'linear-gradient(90deg,#6ee7b7,#34d399)' : ''" [style.width.%]="e.progress"></div>
               </div>
             </div>
             <div *ngIf="enrollments().length === 0" class="text-center py-8 text-sm" style="color:#948da3">
@@ -88,13 +88,12 @@ interface Enrollment {
               </div>
               <div class="flex-1">
                 <p class="text-sm font-semibold" style="color:#221f2c">{{ a.quiz.title }}</p>
-                <p class="text-xs" style="color:#948da3">{{ a.quiz.course.title }}</p>
               </div>
               <div class="text-right">
                 <p class="text-sm font-bold" [style.color]="a.passed ? '#1f9d6f' : '#f25c78'">
-                  {{ a.score }}/{{ a.maxScore }}
+                  {{ a.score }}%
                 </p>
-                <p class="text-xs" style="color:#948da3">{{ a.attemptedAt | date:'dd/MM/yy' }}</p>
+                <p class="text-xs" style="color:#948da3">{{ a.completedAt | date:'dd/MM/yy' }}</p>
               </div>
             </div>
           </div>
@@ -120,17 +119,17 @@ export class StudentProgress implements OnInit {
   avgScore = () => {
     const a = this.attempts();
     if (!a.length) return 0;
-    return Math.round(a.reduce((s, x) => s + (x.score / x.maxScore) * 100, 0) / a.length);
+    return Math.round(a.reduce((s, x) => s + x.score, 0) / a.length);
   };
 
   constructor(private auth: AuthService, private api: ApiService) {}
 
   ngOnInit() {
-    this.api.get<Enrollment[]>('/enrollments/my').subscribe({
+    this.api.get<Enrollment[]>('/enrollments/me').subscribe({
       next: data => { this.enrollments.set(data ?? []); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
-    this.api.get<Attempt[]>('/quiz-attempts/my').subscribe({
+    this.api.get<Attempt[]>('/quizzes/attempts/me').subscribe({
       next: data => this.attempts.set(data ?? []),
       error: () => {},
     });

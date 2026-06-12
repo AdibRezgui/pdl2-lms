@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth';
 import { ApiService } from '../../../core/services/api';
+import { ToastService } from '../../../core/services/toast';
 import { Sidebar } from '../../../shared/sidebar/sidebar';
 
 interface User { id: string; name: string; email: string; role: string; enabled: boolean; createdAt?: string }
@@ -114,7 +115,7 @@ export class AdminUsers implements OnInit {
   roleBg(r: string) { return { ADMIN: 'rgba(245,165,36,.14)', TRAINER: 'rgba(251,114,153,.14)', STUDENT: 'rgba(167,139,250,.14)' }[r] ?? 'rgba(167,139,250,.1)'; }
   roleText(r: string) { return { ADMIN: '#e2940f', TRAINER: '#e85586', STUDENT: '#7c5ce0' }[r] ?? '#7c5ce0'; }
 
-  constructor(private auth: AuthService, private api: ApiService) {}
+  constructor(private auth: AuthService, private api: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.api.get<User[]>('/admin/users').subscribe({
@@ -128,15 +129,21 @@ export class AdminUsers implements OnInit {
   }
 
   toggleStatus(user: User) {
-    this.api.put(`/admin/users/${user.id}/toggle`).subscribe({
+    this.api.put(`/admin/users/${user.id}/toggle-active`).subscribe({
       next: () => this.users.update(list => list.map(u => u.id === user.id ? { ...u, enabled: !u.enabled } : u)),
     });
   }
 
   deleteUser(id: string) {
-    if (!confirm('Supprimer cet utilisateur ?')) return;
-    this.api.delete(`/admin/users/${id}`).subscribe({
-      next: () => this.users.update(list => list.filter(u => u.id !== id)),
+    this.toast.confirm('Supprimer cet utilisateur définitivement ?').then(ok => {
+      if (!ok) return;
+      this.api.delete(`/admin/users/${id}`).subscribe({
+        next: () => {
+          this.users.update(list => list.filter(u => u.id !== id));
+          this.toast.success('Utilisateur supprimé.');
+        },
+        error: () => this.toast.error('Impossible de supprimer cet utilisateur.'),
+      });
     });
   }
 }

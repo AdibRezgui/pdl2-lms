@@ -5,8 +5,10 @@ import { ApiService } from '../../../core/services/api';
 import { Sidebar } from '../../../shared/sidebar/sidebar';
 
 interface AdminStats {
-  totalUsers: number; totalCourses: number; totalEnrollments: number;
-  totalRevenue: number; studentCount: number; trainerCount: number;
+  totalUsers: number; totalCourses: number; publishedCourses: number;
+  totalEnrollments: number; completionRate: number;
+  totalStudents: number; totalTrainers: number;
+  pendingCourses: number;
 }
 interface CourseStats { id: string; title: string; category: string; enrollmentCount: number; rating: number; published: boolean }
 
@@ -30,11 +32,11 @@ interface CourseStats { id: string; title: string; category: string; enrollmentC
             <div class="space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-sm" style="color:#948da3">Stagiaires</span>
-                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.studentCount ?? 0 }}</span>
+                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.totalStudents ?? 0 }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-sm" style="color:#948da3">Formateurs</span>
-                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.trainerCount ?? 0 }}</span>
+                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.totalTrainers ?? 0 }}</span>
               </div>
               <div class="flex items-center justify-between" style="border-top:1px solid rgba(167,139,250,.12);padding-top:12px">
                 <span class="text-sm font-medium" style="color:#221f2c">Total</span>
@@ -47,18 +49,39 @@ interface CourseStats { id: string; title: string; category: string; enrollmentC
             <div class="space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-sm" style="color:#948da3">Cours publiés</span>
-                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.totalCourses ?? 0 }}</span>
+                <span class="text-sm font-bold" style="color:#221f2c">{{ stats()?.publishedCourses ?? 0 }}</span>
               </div>
               <div class="flex items-center justify-between">
+                <span class="text-sm" style="color:#948da3">En attente de validation</span>
+                <span class="text-sm font-bold" style="color:#d97706">{{ stats()?.pendingCourses ?? 0 }}</span>
+              </div>
+              <div class="flex items-center justify-between" style="border-top:1px solid rgba(167,139,250,.12);padding-top:12px">
                 <span class="text-sm" style="color:#948da3">Inscriptions totales</span>
                 <span class="text-sm font-bold" style="color:#1f9d6f">{{ stats()?.totalEnrollments ?? 0 }}</span>
               </div>
             </div>
           </div>
           <div class="card p-6 lift-on-hover">
-            <p class="text-xs mb-2" style="color:#948da3">Revenu total</p>
-            <p class="text-4xl font-bold font-display" style="color:#f5a524">{{ (stats()?.totalRevenue ?? 0) | number:'1.0-0' }}</p>
-            <p class="text-xs mt-1" style="color:#948da3">TND</p>
+            <p class="text-xs mb-3" style="color:#948da3">Taux de complétion</p>
+            <div class="completion-ring-wrap">
+              <svg viewBox="0 0 64 64" class="completion-ring">
+                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(167,139,250,.14)" stroke-width="6"/>
+                <circle cx="32" cy="32" r="26" fill="none" stroke="url(#cg)" stroke-width="6"
+                  stroke-linecap="round" stroke-dasharray="163.4"
+                  [attr.stroke-dashoffset]="163.4 - (163.4 * (stats()?.completionRate ?? 0) / 100)"
+                  transform="rotate(-90 32 32)"/>
+                <defs>
+                  <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#a78bfa"/>
+                    <stop offset="100%" stop-color="#fb7299"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="completion-label">
+                <span class="completion-pct">{{ stats()?.completionRate ?? 0 }}%</span>
+                <span class="completion-sub">complétés</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -105,6 +128,11 @@ interface CourseStats { id: string; title: string; category: string; enrollmentC
   styles: [`
     .badge-cat { padding:3px 11px; border-radius:999px; background:rgba(167,139,250,.14); color:#7c5ce0; font-weight:600; font-size:11px; }
     .role-pill { font-size:11px; padding:3px 11px; border-radius:999px; font-weight:600; }
+    .completion-ring-wrap { position:relative; display:flex; align-items:center; justify-content:center; width:96px; height:96px; margin:8px auto 0; }
+    .completion-ring { width:96px; height:96px; }
+    .completion-label { position:absolute; display:flex; flex-direction:column; align-items:center; }
+    .completion-pct { font-family:'Fraunces',Georgia,serif; font-size:20px; font-weight:800; color:#221f2c; line-height:1; }
+    .completion-sub { font-size:10px; color:#948da3; margin-top:2px; }
   `],
 })
 export class AdminAnalytics implements OnInit {
@@ -121,7 +149,7 @@ export class AdminAnalytics implements OnInit {
     this.api.get<AdminStats>('/admin/stats').subscribe({
       next: data => this.stats.set(data),
     });
-    this.api.get<CourseStats[]>('/courses/published?sort=enrollmentCount,desc&size=10').subscribe({
+    this.api.get<CourseStats[]>('/courses?size=10').subscribe({
       next: data => { this.topCourses.set(Array.isArray(data) ? data : (data as any)?.content ?? []); this.loading.set(false); },
       error: () => this.loading.set(false),
     });

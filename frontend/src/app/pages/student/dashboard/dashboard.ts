@@ -81,7 +81,7 @@ interface Recommendation { id: string; title: string; category: string; level: s
               <div class="course-list">
                 <div class="course-item" *ngFor="let e of active()">
                   <div class="course-cat-badge" [style.background]="catColor(e.course.category)">
-                    {{ e.course.category?.charAt(0) ?? 'C' }}
+                    {{ e.course.category ? e.course.category.charAt(0) : 'C' }}
                   </div>
                   <div class="flex-1 min-w-0">
                     <p class="course-title">{{ e.course.title }}</p>
@@ -205,9 +205,9 @@ export class StudentDashboard implements OnInit {
   constructor(public auth: AuthService, private api: ApiService) {}
 
   ngOnInit() {
-    this.api.get<Enrollment[]>('/enrollments/my').subscribe({
+    this.api.get<Enrollment[]>('/enrollments/me').subscribe({
       next: (res: any) => {
-        const data: Enrollment[] = res?.data ?? [];
+        const data: Enrollment[] = res ?? [];
         this.enrollments.set(data);
         const completed = data.filter(e => e.completed).length;
         const avg = data.length ? Math.round(data.reduce((s, e) => s + e.progress, 0) / data.length) : 0;
@@ -222,7 +222,7 @@ export class StudentDashboard implements OnInit {
 
     this.api.get<any>('/ai/recommend').subscribe({
       next: (res: any) => {
-        const list = res?.data?.recommendations ?? [];
+        const list = res?.recommendations ?? [];
         this.recs.set(list.slice(0, 4));
       },
       error: () => {},

@@ -84,13 +84,18 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus,loggers
   endpoint:
     health:
       show-details: always
+    prometheus:
+      enabled: true
   health:
     mail:
       enabled: false
+  metrics:
+    tags:
+      application: eduai-lms
 
 logging:
   level:

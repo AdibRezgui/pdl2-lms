@@ -48,4 +48,11 @@ public class Question {
     @Column(name = "sort_order")
     @Builder.Default
     private int sortOrder = 0;
+
+    @ElementCollection
+    @CollectionTable(name = "question_correct_answers", joinColumns = @JoinColumn(name = "question_id"))
+    @Column(name = "answer_index")
+    @OrderColumn(name = "answer_order")
+    @Builder.Default
+    private List<Integer> correctAnswers = new ArrayList<>();
 }

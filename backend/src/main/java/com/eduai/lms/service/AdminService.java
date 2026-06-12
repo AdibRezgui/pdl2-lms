@@ -1,9 +1,12 @@
 package com.eduai.lms.service;
 
+import com.eduai.lms.dto.response.CourseResponse;
 import com.eduai.lms.dto.response.PageResponse;
 import com.eduai.lms.dto.response.UserResponse;
 import com.eduai.lms.exception.ResourceNotFoundException;
+import com.eduai.lms.model.Course;
 import com.eduai.lms.model.User;
+import com.eduai.lms.model.enums.CourseStatus;
 import com.eduai.lms.model.enums.UserRole;
 import com.eduai.lms.repository.CourseRepository;
 import com.eduai.lms.repository.EnrollmentRepository;
@@ -19,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -44,10 +48,11 @@ public class AdminService {
         stats.put("totalTrainers", userRepository.countByRole(UserRole.TRAINER));
         stats.put("totalCourses", courseRepository.count());
         stats.put("publishedCourses", courseRepository.countByPublishedTrue());
+        stats.put("pendingCourses", courseRepository.countByStatus(CourseStatus.PENDING_REVIEW));
         stats.put("totalEnrollments", totalEnrollments);
         stats.put("completedEnrollments", completedEnrollments);
         stats.put("completionRate", completionRate);
-        stats.put("totalRevenue", 0);
+        // revenue removed — platform is free
         stats.put("recentUsers", recentUsers.stream().map(UserResponse::from).toList());
         return stats;
     }
@@ -78,5 +83,34 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
         user.setRole(newRole);
         return UserResponse.from(userRepository.save(user));
+    }
+
+    public List<CourseResponse> getPendingCourses() {
+        return courseRepository.findByStatus(CourseStatus.PENDING_REVIEW)
+                .stream().map(CourseResponse::from).toList();
+    }
+
+    public List<CourseResponse> getAllCourses() {
+        return courseRepository.findAll(
+                org.springframework.data.domain.Sort.by("createdAt").descending())
+                .stream().map(CourseResponse::from).toList();
+    }
+
+    public CourseResponse approveCourse(UUID courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cours non trouvé"));
+        course.setStatus(CourseStatus.APPROVED);
+        course.setPublished(true);
+        course.setRejectionReason(null);
+        return CourseResponse.from(courseRepository.save(course));
+    }
+
+    public CourseResponse rejectCourse(UUID courseId, String reason) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cours non trouvé"));
+        course.setStatus(CourseStatus.REJECTED);
+        course.setPublished(false);
+        course.setRejectionReason(reason);
+        return CourseResponse.from(courseRepository.save(course));
     }
 }

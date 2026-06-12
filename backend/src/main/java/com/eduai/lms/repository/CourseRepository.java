@@ -2,6 +2,7 @@ package com.eduai.lms.repository;
 
 import com.eduai.lms.model.Course;
 import com.eduai.lms.model.User;
+import com.eduai.lms.model.enums.CourseStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,4 +32,12 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
         Pageable pageable);
 
     long countByPublishedTrue();
+
+    List<Course> findByStatus(CourseStatus status);
+    long countByStatus(CourseStatus status);
+
+    @Query("SELECT c FROM Course c WHERE " +
+           "(LOWER(c.title) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           "LOWER(c.category) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Course> searchAll(@Param("q") String query, Pageable pageable);
 }

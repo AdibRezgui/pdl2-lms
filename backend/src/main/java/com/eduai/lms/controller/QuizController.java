@@ -29,8 +29,49 @@ public class QuizController {
     private final com.eduai.lms.repository.QuizRepository quizRepository;
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<ApiResponse<List<Quiz>>> getByCourse(@PathVariable UUID courseId) {
-        return ResponseEntity.ok(ApiResponse.ok(quizService.getQuizzesByCourse(courseId)));
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getByCourse(@PathVariable UUID courseId) {
+        List<Quiz> quizzes = quizService.getQuizzesByCourse(courseId);
+        List<Map<String, Object>> result = quizzes.stream().map(q -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", q.getId().toString());
+            m.put("title", q.getTitle());
+            m.put("moduleId", q.getModuleId() != null ? q.getModuleId().toString() : null);
+            m.put("questionsCount", q.getQuestions().size());
+            m.put("timeLimit", q.getTimeLimit());
+            m.put("passingScore", q.getPassingScore());
+            m.put("maxAttempts", q.getMaxAttempts());
+            m.put("createdAt", q.getCreatedAt());
+            long attempts = quizAttemptRepository.countByQuiz(q);
+            List<QuizAttempt> attemptList = quizAttemptRepository.findByQuiz(q);
+            long passed = attemptList.stream().filter(QuizAttempt::isPassed).count();
+            int avgScore = attemptList.isEmpty() ? 0 :
+                (int) Math.round(attemptList.stream().mapToInt(QuizAttempt::getScore).average().orElse(0));
+            m.put("attemptsCount", attempts);
+            m.put("passRate", attempts > 0 ? Math.round((double) passed / attempts * 100) : 0);
+            m.put("avgScore", avgScore);
+            return m;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteQuiz(@PathVariable UUID id,
+            @AuthenticationPrincipal User user) {
+        Quiz quiz = quizService.getQuizById(id);
+        if (!quiz.getCourse().getTrainer().getId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+            return ResponseEntity.status(403).body(ApiResponse.error("Accès refusé"));
+        }
+        quizAttemptRepository.findByQuiz(quiz).forEach(a -> quizAttemptRepository.delete(a));
+        quizRepository.delete(quiz);
+        return ResponseEntity.ok(ApiResponse.ok("Quiz supprimé", null));
+    }
+
+    @GetMapping("/module/{moduleId}")
+    public ResponseEntity<ApiResponse<Quiz>> getByModule(@PathVariable UUID moduleId) {
+        return quizRepository.findFirstByModuleId(moduleId)
+                .map(q -> ResponseEntity.ok(ApiResponse.ok(q)))
+                .orElse(ResponseEntity.ok(ApiResponse.ok(null)));
     }
 
     @GetMapping("/{id}")
@@ -57,12 +98,13 @@ public class QuizController {
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal User user) {
         UUID courseId = UUID.fromString((String) body.get("courseId"));
+        UUID moduleId = body.get("moduleId") != null ? UUID.fromString((String) body.get("moduleId")) : null;
         String title = (String) body.get("title");
-        int timeLimit = body.containsKey("timeLimit") ? (int) body.get("timeLimit") : 15;
-        int passingScore = body.containsKey("passingScore") ? (int) body.get("passingScore") : 70;
+        int timeLimit = body.containsKey("timeLimit") ? ((Number) body.get("timeLimit")).intValue() : 15;
+        int passingScore = body.containsKey("passingScore") ? ((Number) body.get("passingScore")).intValue() : 70;
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> questions = (List<Map<String, Object>>) body.get("questions");
-        Quiz quiz = quizService.createQuiz(courseId, title, timeLimit, passingScore, questions, user);
+        Quiz quiz = quizService.createQuiz(courseId, moduleId, title, timeLimit, passingScore, questions, user);
         return ResponseEntity.ok(ApiResponse.ok("Quiz créé avec succès", quiz));
     }
 
@@ -93,6 +135,7 @@ public class QuizController {
             m.put("timeLimit", q.getTimeLimit());
             m.put("passingScore", q.getPassingScore());
             m.put("maxAttempts", q.getMaxAttempts());
+            m.put("moduleId", q.getModuleId() != null ? q.getModuleId().toString() : null);
             m.put("attemptsCount", qAttempts.size());
             m.put("lastScore", lastScore);
             m.put("passed", passed);

@@ -43,6 +43,13 @@ public class EnrollmentController {
             enrollmentService.updateProgress(id, body.getOrDefault("progress", 0), user)));
     }
 
+    @PostMapping("/{id}/claim-badge")
+    public ResponseEntity<ApiResponse<Enrollment>> claimBadge(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ApiResponse.ok("Badge obtenu !", enrollmentService.claimBadge(id, user)));
+    }
+
     @GetMapping("/course/{courseId}")
     public ResponseEntity<ApiResponse<PageResponse<Enrollment>>> courseEnrollments(
             @PathVariable UUID courseId,

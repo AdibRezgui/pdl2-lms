@@ -64,6 +64,14 @@ public class ModuleService {
         moduleRepository.delete(module);
     }
 
+    public CourseModule toggleLock(UUID moduleId, User currentUser) {
+        CourseModule module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module non trouvé"));
+        checkAccess(module.getCourse(), currentUser);
+        module.setLocked(!module.isLocked());
+        return moduleRepository.save(module);
+    }
+
     private void checkAccess(Course course, User user) {
         if (!user.getRole().equals(UserRole.ADMIN) &&
             !course.getTrainer().getId().equals(user.getId())) {

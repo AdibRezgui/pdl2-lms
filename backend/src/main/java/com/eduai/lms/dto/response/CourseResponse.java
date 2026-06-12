@@ -1,6 +1,7 @@
 package com.eduai.lms.dto.response;
 
 import com.eduai.lms.model.Course;
+import com.eduai.lms.model.enums.CourseStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -27,6 +28,8 @@ public class CourseResponse {
     private String trainerName;
     private String trainerAvatar;
     private boolean published;
+    private CourseStatus status;
+    private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +49,8 @@ public class CourseResponse {
         r.setLanguage(c.getLanguage());
         r.setTags(c.getTags());
         r.setPublished(c.isPublished());
+        r.setStatus(c.getStatus());
+        r.setRejectionReason(c.getRejectionReason());
         r.setCreatedAt(c.getCreatedAt());
         r.setUpdatedAt(c.getUpdatedAt());
         if (c.getTrainer() != null) {

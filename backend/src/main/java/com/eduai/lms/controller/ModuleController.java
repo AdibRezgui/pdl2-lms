@@ -50,4 +50,13 @@ public class ModuleController {
         moduleService.deleteModule(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Module supprimé", null));
     }
+
+    @PatchMapping("/modules/{id}/lock")
+    public ResponseEntity<ApiResponse<CourseModule>> toggleLock(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User user) {
+        CourseModule mod = moduleService.toggleLock(id, user);
+        String msg = mod.isLocked() ? "Module verrouillé" : "Module déverrouillé";
+        return ResponseEntity.ok(ApiResponse.ok(msg, mod));
+    }
 }

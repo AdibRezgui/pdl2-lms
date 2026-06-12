@@ -45,6 +45,10 @@ public class Enrollment {
     @Column(name = "certificate_url")
     private String certificateUrl;
 
+    @Column(name = "badge_earned")
+    @Builder.Default
+    private boolean badgeEarned = false;
+
     @Column(name = "last_accessed_at")
     private LocalDateTime lastAccessedAt;
 
