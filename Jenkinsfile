@@ -149,7 +149,6 @@ pipeline {
             when { branch pattern: 'main|adib|sarrah|chaima', comparator: 'REGEXP' }
             steps {
                 script {
-                    sh "echo ${DOCKER_CREDS_PSW} | docker login ${REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
                     parallel(
                         backend: {
                             sh "docker build -t ${REGISTRY}/eduai-backend:${IMAGE_TAG} ./backend"
