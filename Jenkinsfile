@@ -136,7 +136,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh """
-                        ./mvnw deploy -DskipTests \
+                        ./mvnw deploy -DskipTests -s /root/.m2/settings.xml \
                           -Drevision=${APP_VERSION} \
                           -DaltDeploymentRepository=nexus-snapshots::default::${NEXUS_URL}/repository/maven-snapshots/
                     """
