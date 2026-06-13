@@ -2,9 +2,7 @@ package com.eduai.lms.controller;
 
 import com.eduai.lms.dto.response.CourseResponse;
 import com.eduai.lms.dto.response.PageResponse;
-import com.eduai.lms.model.User;
 import com.eduai.lms.model.enums.CourseStatus;
-import com.eduai.lms.model.enums.UserRole;
 import com.eduai.lms.security.JwtService;
 import com.eduai.lms.service.CourseService;
 import com.eduai.lms.service.FileStorageService;
@@ -15,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,9 +22,18 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * @WebMvcTest does NOT apply server.servlet.context-path, so controller paths
+ * are used directly (e.g. /courses, not /api/courses).
+ *
+ * UserDetailsService must be mocked so that SecurityConfig can be constructed
+ * and our custom filter chain (stateless, no CSRF, custom rules) takes effect
+ * instead of Spring Boot's default form-login chain.
+ */
 @WebMvcTest(CourseController.class)
 class CourseControllerTest {
 
@@ -36,6 +44,8 @@ class CourseControllerTest {
     @MockBean FileStorageService fileStorageService;
     @MockBean JwtService jwtService;
     @MockBean com.eduai.lms.repository.UserRepository userRepository;
+    // Required so SecurityConfig can be constructed and our custom chain activates
+    @MockBean UserDetailsService userDetailsService;
 
     private CourseResponse sampleResponse;
 
@@ -62,7 +72,8 @@ class CourseControllerTest {
         when(courseService.getPublishedCourses(anyInt(), anyInt(), any(), any(), any()))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/api/courses"))
+        // No /api prefix — @WebMvcTest does not apply server.servlet.context-path
+        mockMvc.perform(get("/courses"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].title").value("Angular Avancé"));
     }
@@ -73,14 +84,15 @@ class CourseControllerTest {
         UUID id = sampleResponse.getId();
         when(courseService.getCourseById(id)).thenReturn(sampleResponse);
 
-        mockMvc.perform(get("/api/courses/{id}", id))
+        mockMvc.perform(get("/courses/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("Angular Avancé"));
     }
 
     @Test
-    void getCourseById_unauthenticated_returns401or403() throws Exception {
-        mockMvc.perform(get("/api/courses/{id}", UUID.randomUUID()))
+    void deleteCourse_unauthenticated_returns401or403() throws Exception {
+        // GET /courses/** is public; DELETE requires TRAINER or ADMIN
+        mockMvc.perform(delete("/courses/{id}", UUID.randomUUID()))
                 .andExpect(status().is4xxClientError());
     }
 
@@ -99,7 +111,10 @@ class CourseControllerTest {
             }
             """;
 
-        mockMvc.perform(post("/api/courses")
+        // @WebMvcTest re-enables CSRF via MockMvcSecurityConfiguration; pass a valid
+        // token so the request isn't blocked before reaching the controller.
+        mockMvc.perform(post("/courses")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());

@@ -57,6 +57,11 @@ public class Course {
     @JsonIgnoreProperties({"password", "authorities", "hibernateLazyInitializer"})
     private User trainer;
 
+    /** Derived field — serialised by Jackson in ALL contexts (including inside Enrollment). */
+    public String getTrainerName() {
+        return trainer != null ? trainer.getName() : null;
+    }
+
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     @Builder.Default

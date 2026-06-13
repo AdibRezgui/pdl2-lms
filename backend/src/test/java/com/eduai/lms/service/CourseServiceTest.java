@@ -149,6 +149,9 @@ class CourseServiceTest {
     @Test
     void deleteCourse_byOwner_succeeds() {
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
+        // deleteCourse pages through enrollments before deleting them
+        when(enrollmentRepository.findByCourse(any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
 
         assertThatNoException().isThrownBy(() -> courseService.deleteCourse(courseId, trainer));
         verify(courseRepository).delete(course);
