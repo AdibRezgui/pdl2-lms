@@ -46,7 +46,7 @@ class AdminControllerIT {
 
     @Test
     void getPlatformStats_withAdminToken_returns200() throws Exception {
-        mockMvc.perform(get("/api/admin/stats")
+        mockMvc.perform(get("/admin/stats")
                         .header("Authorization", "Bearer " + adminToken)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -55,7 +55,7 @@ class AdminControllerIT {
 
     @Test
     void getAllUsers_withAdminToken_returnsList() throws Exception {
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/admin/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -64,14 +64,14 @@ class AdminControllerIT {
 
     @Test
     void getPlatformStats_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/admin/stats")
+        mockMvc.perform(get("/admin/stats")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void getPendingCourses_withAdminToken_returnsList() throws Exception {
-        mockMvc.perform(get("/api/admin/courses/pending")
+        mockMvc.perform(get("/admin/courses/pending")
                         .header("Authorization", "Bearer " + adminToken)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
