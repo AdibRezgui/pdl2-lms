@@ -69,7 +69,7 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh 'npm ci --prefer-offline'
-                            sh 'npx ng test --no-watch --reporters=junit --outputFile=test-results.xml'
+                            sh 'npm run test:ci'
                         }
                     }
                     post {
@@ -85,7 +85,7 @@ pipeline {
                         dir('ai_service') {
                             sh 'pip install -r requirements.txt --quiet'
                             sh 'pip install pytest pytest-cov --quiet'
-                            sh 'pytest tests/ -v --cov=. --cov-report=xml:coverage.xml || true'
+                            sh 'pytest tests/ -v --junitxml=test-results.xml --cov=. --cov-report=xml:coverage.xml || true'
                         }
                     }
                     post {
