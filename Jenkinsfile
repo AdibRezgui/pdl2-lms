@@ -167,56 +167,24 @@ pipeline {
             }
         }
 
-        // 9. DEPLOY
+        // 9. DEPLOY (simulé en local — pas de serveur de prod)
         stage('Deploy') {
             when { branch 'main' }
             steps {
-                input message: "Deploy ${IMAGE_TAG} to production?", ok: 'Deploy'
-                sshagent(credentials: [DEPLOY_SSH_CRED]) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} '
-                            cd ${DEPLOY_PATH} &&
-                            export IMAGE_TAG=${IMAGE_TAG} &&
-                            docker compose pull &&
-                            docker compose up -d --remove-orphans &&
-                            docker image prune -f
-                        '
-                    """
-                }
+                echo "=== Deploiement simule (environnement local) ==="
+                echo "Image deployable : ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
+                echo "En production, ce stage se connecterait en SSH a ${DEPLOY_HOST} pour faire un 'docker compose pull && up -d'."
+                echo "Stage non bloquant en CI locale (pas de serveur distant)."
             }
         }
 
-        // 10. OWASP ZAP SECURITY SCAN
+        // 10. OWASP ZAP SECURITY SCAN (non bloquant)
         stage('OWASP ZAP Scan') {
             when { branch pattern: 'main|adib|sarrah|chaima', comparator: 'REGEXP' }
             steps {
-                sh 'mkdir -p zap-reports'
-                sh """
-                    docker run --rm \
-                      -v \$(pwd)/zap-reports:/zap/wrk:rw \
-                      --network host \
-                      ghcr.io/zaproxy/zaproxy:stable \
-                      zap-api-scan.py \
-                        -t http://localhost:8080/api/v3/api-docs \
-                        -f openapi \
-                        -r zap-report.html \
-                        -J zap-report.json \
-                        -z "-config scanner.attackStrength=LOW" \
-                        -l WARN || true
-                """
-            }
-            post {
-                always {
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'zap-reports',
-                        reportFiles: 'zap-report.html',
-                        reportName: 'OWASP ZAP Security Report'
-                    ])
-                    archiveArtifacts artifacts: 'zap-reports/zap-report.json', allowEmptyArchive: true
-                }
+                echo "=== Scan de securite OWASP ZAP ==="
+                echo "En production, ZAP scannerait l'application deployee."
+                echo "Stage non bloquant en CI locale (l'application n'est pas deployee sur un host accessible)."
             }
         }
     }
