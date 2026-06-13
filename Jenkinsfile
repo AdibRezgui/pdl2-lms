@@ -12,8 +12,6 @@ pipeline {
         REGISTRY        = credentials('docker-registry-url')
         DOCKER_CREDS    = credentials('docker-registry-creds')
         NEXUS_URL       = credentials('nexus-url')
-        SONAR_TOKEN     = credentials('sonar-token')
-        SONAR_HOST_URL  = credentials('sonar-host-url')
         DEPLOY_SSH_CRED = 'eduai-deploy-ssh'
         DEPLOY_HOST     = credentials('deploy-host')
         DEPLOY_PATH     = '/opt/eduai'
@@ -117,16 +115,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     dir('backend') {
-                        sh """
-                            ./mvnw sonar:sonar \
-                              -Dsonar.projectKey=eduai-lms \
-                              -Dsonar.projectName='EduAI LMS' \
-                              -Dsonar.host.url=${SONAR_HOST_URL} \
-                              -Dsonar.token=${SONAR_TOKEN} \
-                              -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                              -Dsonar.exclusions=**/DataInitializer.java,**/dto/**,**/model/enums/**,**/*Application.java \
-                              -q
-                        """
+                        sh './mvnw sonar:sonar -Dsonar.projectKey=eduai-lms -Dsonar.projectName=EduAI-LMS -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.exclusions=**/DataInitializer.java,**/dto/**,**/model/enums/**,**/*Application.java'
                     }
                 }
             }
