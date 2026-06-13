@@ -23,7 +23,7 @@ pipeline {
 
     stages {
 
-        // ── 1. CHECKOUT ────────────────────────────────────────────────────
+        // 1. CHECKOUT
         stage('Checkout') {
             steps {
                 checkout scm
@@ -32,7 +32,7 @@ pipeline {
             }
         }
 
-        // ── 2. BUILD BACKEND ───────────────────────────────────────────────
+        // 2. BUILD BACKEND
         stage('Build Backend') {
             steps {
                 dir('backend') {
@@ -41,7 +41,7 @@ pipeline {
             }
         }
 
-        // ── 3. UNIT TESTS (parallel) ───────────────────────────────────────
+        // 3. UNIT TESTS (parallel)
         stage('Unit Tests') {
             parallel {
 
@@ -69,7 +69,6 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh 'npm ci --prefer-offline'
-                            // Angular 21 uses @angular/build:unit-test (Vitest-backed)
                             sh 'npx ng test --no-watch --reporters=junit --outputFile=test-results.xml'
                         }
                     }
@@ -98,7 +97,7 @@ pipeline {
             }
         }
 
-        // ── 4. INTEGRATION TESTS ───────────────────────────────────────────
+        // 4. INTEGRATION TESTS
         stage('Integration Tests') {
             steps {
                 dir('backend') {
@@ -113,7 +112,7 @@ pipeline {
             }
         }
 
-        // ── 5. SONARQUBE ANALYSIS ──────────────────────────────────────────
+        // 5. SONARQUBE ANALYSIS
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -133,7 +132,7 @@ pipeline {
             }
         }
 
-        // ── 6. QUALITY GATE ────────────────────────────────────────────────
+        // 6. QUALITY GATE
         stage('Quality Gate') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
@@ -142,7 +141,7 @@ pipeline {
             }
         }
 
-        // ── 7. NEXUS ARTIFACT PUBLISH ──────────────────────────────────────
+        // 7. NEXUS ARTIFACT PUBLISH
         stage('Publish to Nexus') {
             when { branch pattern: 'main|adib|sarrah|chaima', comparator: 'REGEXP' }
             steps {
@@ -156,29 +155,31 @@ pipeline {
             }
         }
 
-        // ── 8. BUILD & PUSH DOCKER IMAGES ──────────────────────────────────
+        // 8. BUILD & PUSH DOCKER IMAGES
         stage('Build Docker Images') {
             when { branch pattern: 'main|adib|sarrah|chaima', comparator: 'REGEXP' }
             steps {
-                sh "echo ${DOCKER_CREDS_PSW} | docker login ${REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
-                parallel([
-                    backend: {
-                        sh "docker build -t ${REGISTRY}/eduai-backend:${IMAGE_TAG} ./backend"
-                        sh "docker push ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
-                    },
-                    frontend: {
-                        sh "docker build -t ${REGISTRY}/eduai-frontend:${IMAGE_TAG} ./frontend"
-                        sh "docker push ${REGISTRY}/eduai-frontend:${IMAGE_TAG}"
-                    },
-                    ai: {
-                        sh "docker build -t ${REGISTRY}/eduai-ai:${IMAGE_TAG} ./ai_service"
-                        sh "docker push ${REGISTRY}/eduai-ai:${IMAGE_TAG}"
-                    }
-                ])
+                script {
+                    sh "echo ${DOCKER_CREDS_PSW} | docker login ${REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
+                    parallel(
+                        backend: {
+                            sh "docker build -t ${REGISTRY}/eduai-backend:${IMAGE_TAG} ./backend"
+                            sh "docker push ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
+                        },
+                        frontend: {
+                            sh "docker build -t ${REGISTRY}/eduai-frontend:${IMAGE_TAG} ./frontend"
+                            sh "docker push ${REGISTRY}/eduai-frontend:${IMAGE_TAG}"
+                        },
+                        ai: {
+                            sh "docker build -t ${REGISTRY}/eduai-ai:${IMAGE_TAG} ./ai_service"
+                            sh "docker push ${REGISTRY}/eduai-ai:${IMAGE_TAG}"
+                        }
+                    )
+                }
             }
         }
 
-        // ── 9. DEPLOY ──────────────────────────────────────────────────────
+        // 9. DEPLOY
         stage('Deploy') {
             when { branch 'main' }
             steps {
@@ -197,7 +198,7 @@ pipeline {
             }
         }
 
-        // ── 10. OWASP ZAP SECURITY SCAN ────────────────────────────────────
+        // 10. OWASP ZAP SECURITY SCAN
         stage('OWASP ZAP Scan') {
             when { branch pattern: 'main|adib|sarrah|chaima', comparator: 'REGEXP' }
             steps {
@@ -234,10 +235,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build #${env.BUILD_NUMBER} (${IMAGE_TAG}) succeeded on ${env.BRANCH_NAME}"
+            echo "Build #${env.BUILD_NUMBER} (${IMAGE_TAG}) succeeded on ${env.BRANCH_NAME}"
         }
         failure {
-            echo "❌ Build #${env.BUILD_NUMBER} FAILED on ${env.BRANCH_NAME}"
+            echo "Build #${env.BUILD_NUMBER} FAILED on ${env.BRANCH_NAME}"
         }
         always {
             cleanWs(
