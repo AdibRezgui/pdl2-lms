@@ -7,6 +7,9 @@ import com.eduai.lms.repository.*;
 import com.eduai.lms.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +39,9 @@ public class AiController {
 
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
+
+    @Value("${app.upload.dir:./uploads}")
+    private String uploadDir;
 
     @GetMapping("/recommend")
     public ResponseEntity<ApiResponse<Map<String, Object>>> recommend(
@@ -103,12 +110,93 @@ public class AiController {
         return proxyToAi("/ai/generate-summary", request);
     }
 
+    @PostMapping("/chat")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> chat(
+            @RequestBody Map<String, Object> request,
+            @AuthenticationPrincipal User user) {
+
+        List<Enrollment> enrollments = enrollmentRepository.findByUser(user);
+        List<QuizAttempt> attempts   = quizAttemptRepository.findByUser(user);
+        List<Course> available = courseRepository.findByPublishedTrue(
+                org.springframework.data.domain.PageRequest.of(0, 50)).getContent();
+        List<String> enrolledIds = enrollments.stream()
+                .map(e -> e.getCourse().getId().toString()).toList();
+
+        List<Map<String, Object>> enrollmentData = enrollments.stream().map(e -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("courseId", e.getCourse().getId().toString());
+            m.put("courseTitle", e.getCourse().getTitle());
+            m.put("category", e.getCourse().getCategory());
+            m.put("description", e.getCourse().getDescription() != null
+                    ? e.getCourse().getDescription().substring(0, Math.min(120, e.getCourse().getDescription().length())) : "");
+            m.put("progress", e.getProgress());
+            m.put("completed", e.isCompleted());
+            m.put("level", e.getCourse().getLevel());
+            m.put("trainerName", e.getCourse().getTrainer() != null ? e.getCourse().getTrainer().getName() : "");
+            m.put("tags", e.getCourse().getTags());
+            return m;
+        }).toList();
+
+        List<Map<String, Object>> attemptData = attempts.stream()
+                .sorted(java.util.Comparator.comparing(
+                        a -> a.getStartedAt() != null ? a.getStartedAt() : java.time.LocalDateTime.MIN,
+                        java.util.Comparator.reverseOrder()))
+                .limit(10)
+                .map(a -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("quizId", a.getQuiz().getId().toString());
+                    m.put("quizTitle", a.getQuiz().getTitle());
+                    m.put("courseTitle", a.getQuiz().getCourse().getTitle());
+                    m.put("score", a.getScore());
+                    m.put("passed", a.isPassed());
+                    m.put("category", a.getQuiz().getCourse().getCategory());
+                    return m;
+                }).toList();
+
+        List<Map<String, Object>> availableData = available.stream()
+                .filter(c -> !enrolledIds.contains(c.getId().toString()))
+                .limit(15)
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getId().toString());
+                    m.put("title", c.getTitle());
+                    m.put("category", c.getCategory());
+                    m.put("level", c.getLevel());
+                    m.put("rating", c.getRating());
+                    m.put("studentsCount", c.getStudentsCount());
+                    m.put("trainerName", c.getTrainer() != null ? c.getTrainer().getName() : "");
+                    m.put("tags", c.getTags());
+                    return m;
+                }).toList();
+
+        long completed = enrollments.stream().filter(Enrollment::isCompleted).count();
+        double avgScore = attempts.isEmpty() ? 0.0
+                : attempts.stream().mapToInt(QuizAttempt::getScore).average().orElse(0.0);
+        long passed = attempts.stream().filter(QuizAttempt::isPassed).count();
+
+        Map<String, Object> userContext = new HashMap<>();
+        userContext.put("name", user.getName());
+        userContext.put("totalCourses", enrollments.size());
+        userContext.put("completedCourses", (int) completed);
+        userContext.put("averageQuizScore", (int) Math.round(avgScore));
+        userContext.put("totalQuizAttempts", attempts.size());
+        userContext.put("passedQuizzes", (int) passed);
+        userContext.put("enrollments", enrollmentData);
+        userContext.put("quizAttempts", attemptData);
+        userContext.put("availableCourses", availableData);
+
+        Map<String, Object> body = new HashMap<>(request);
+        body.put("userContext", userContext);
+
+        return proxyToAi("/ai/chat", body);
+    }
+
     /**
      * Generate a quiz via AI and save it to the DB.
      * scope = LESSON | MODULE | COURSE
      * scopeId = UUID of the lesson/module/course
      * courseId = UUID of the parent course (always required)
-     * count = 10 | 20 | 40
+     * count = 10
      */
     @PostMapping("/generate-quiz-for")
     @PreAuthorize("hasAnyRole('TRAINER','ADMIN')")
@@ -124,7 +212,7 @@ public class AiController {
         @SuppressWarnings("unchecked")
         List<String> lessonIds = request.containsKey("lessonIds") ? (List<String>) request.get("lessonIds") : null;
         String questionType = (String) request.getOrDefault("questionType", "SINGLE");
-        count = Math.min(Math.max(count, 1), 40);
+        count = Math.min(Math.max(count, 1), 10);
 
         UUID courseId = UUID.fromString(courseIdStr);
         Course course = courseRepository.findById(courseId)
@@ -141,13 +229,18 @@ public class AiController {
                 CourseModule mod = moduleRepository.findById(lesson.getModule() != null
                         ? lesson.getModule().getId() : UUID.randomUUID()).orElse(null);
                 String modTitle = mod != null ? mod.getTitle() : "";
-                // Send full lesson content (up to 3000 chars) for rich context
-                String lessonContent = lesson.getContent() != null
-                        ? lesson.getContent().substring(0, Math.min(3000, lesson.getContent().length()))
-                        : "";
+
+                // Use PDF extraction when available; fall back to stored text only if PDF is empty
+                String lessonContent = extractPdfText(lesson.getPdfUrl());
+                if (lessonContent.isBlank() && lesson.getContent() != null
+                        && lesson.getContent().trim().length() > 100) {
+                    lessonContent = lesson.getContent().substring(0, Math.min(10000, lesson.getContent().length()));
+                }
+
                 topic = "LEÇON: " + lesson.getTitle() + "\n"
                         + "MODULE: " + modTitle + "\n"
                         + "COURS: " + course.getTitle() + "\n"
+                        + "CATÉGORIE: " + (course.getCategory() != null ? course.getCategory() : "") + "\n"
                         + "TAGS: " + String.join(", ", course.getTags() != null ? course.getTags() : List.of()) + "\n"
                         + "CONTENU:\n" + lessonContent;
                 quizTitle = "Quiz IA — " + lesson.getTitle();
@@ -155,27 +248,31 @@ public class AiController {
             case "MODULE" -> {
                 CourseModule mod = moduleRepository.findById(UUID.fromString(scopeId))
                         .orElseThrow(() -> new com.eduai.lms.exception.ResourceNotFoundException("Module non trouvé"));
-                // Aggregate lesson titles + content snippets for full context
                 StringBuilder sb = new StringBuilder();
                 sb.append("MODULE: ").append(mod.getTitle()).append("\n");
                 sb.append("COURS: ").append(course.getTitle()).append("\n");
+                sb.append("CATÉGORIE: ").append(course.getCategory() != null ? course.getCategory() : "").append("\n");
                 sb.append("TAGS: ").append(String.join(", ", course.getTags() != null ? course.getTags() : List.of())).append("\n");
-                sb.append("LEÇONS:\n");
-                List<Lesson> selectedLessons = mod.getLessons();
+                sb.append("CONTENU DES LEÇONS:\n");
+                List<Lesson> selectedLessons = lessonRepository.findByModuleOrderBySortOrderAsc(mod);
                 if (lessonIds != null && !lessonIds.isEmpty()) {
                     selectedLessons = selectedLessons.stream()
                         .filter(l -> lessonIds.contains(l.getId().toString()))
                         .collect(Collectors.toList());
                 }
-                int remaining = 4000;
+                int remaining = 5000;
                 for (Lesson l : selectedLessons) {
-                    sb.append("- ").append(l.getTitle());
-                    if (l.getContent() != null && !l.getContent().isBlank() && remaining > 0) {
-                        int snip = Math.min(400, Math.min(remaining, l.getContent().length()));
-                        sb.append(": ").append(l.getContent(), 0, snip);
+                    if (remaining <= 0) break;
+                    sb.append("\n### ").append(l.getTitle()).append("\n");
+                    // Prefer PDF extraction; fall back to stored content
+                    String content = extractPdfText(l.getPdfUrl());
+                    if (content.isBlank() && l.getContent() != null && l.getContent().trim().length() > 50)
+                        content = l.getContent();
+                    if (!content.isBlank()) {
+                        int snip = Math.min(remaining, Math.min(2500, content.length()));
+                        sb.append(content, 0, snip).append("\n");
                         remaining -= snip;
                     }
-                    sb.append("\n");
                 }
                 topic = sb.toString();
                 quizTitle = "Quiz IA — " + mod.getTitle();
@@ -188,11 +285,11 @@ public class AiController {
                 if (course.getDescription() != null && !course.getDescription().isBlank())
                     sb.append("DESCRIPTION: ").append(course.getDescription(), 0, Math.min(500, course.getDescription().length())).append("\n");
                 sb.append("TAGS: ").append(String.join(", ", course.getTags() != null ? course.getTags() : List.of())).append("\n");
-                sb.append("MODULES ET LEÇONS:\n");
+                sb.append("CONTENU DU COURS:\n");
                 int remaining = 5000;
                 for (CourseModule m : modules) {
-                    sb.append("\nModule: ").append(m.getTitle()).append("\n");
-                    // Use repository to reliably load lessons (avoids lazy-load issues)
+                    if (remaining <= 0) break;
+                    sb.append("\n## Module: ").append(m.getTitle()).append("\n");
                     List<Lesson> moduleLessons = lessonRepository.findByModuleOrderBySortOrderAsc(m);
                     if (lessonIds != null && !lessonIds.isEmpty()) {
                         moduleLessons = moduleLessons.stream()
@@ -200,13 +297,16 @@ public class AiController {
                             .collect(Collectors.toList());
                     }
                     for (Lesson l : moduleLessons) {
-                        sb.append("  - ").append(l.getTitle());
-                        if (l.getContent() != null && !l.getContent().isBlank() && remaining > 0) {
-                            int snip = Math.min(400, Math.min(remaining, l.getContent().length()));
-                            sb.append(": ").append(l.getContent(), 0, snip);
+                        if (remaining <= 0) break;
+                        sb.append("### ").append(l.getTitle()).append("\n");
+                        String content = extractPdfText(l.getPdfUrl());
+                        if (content.isBlank() && l.getContent() != null && l.getContent().trim().length() > 50)
+                            content = l.getContent();
+                        if (!content.isBlank()) {
+                            int snip = Math.min(remaining, Math.min(1500, content.length()));
+                            sb.append(content, 0, snip).append("\n");
                             remaining -= snip;
                         }
-                        sb.append("\n");
                     }
                 }
                 topic = sb.toString();
@@ -241,11 +341,20 @@ public class AiController {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> rawQuestions = (List<Map<String, Object>>) aiData.get("questions");
 
-        // Remap correctAnswer → correct (expected by QuizService)
+        // Remap correctAnswer → correct and correctAnswers (for MIXED multi-select) → correctAnswers
         List<Map<String, Object>> questions = rawQuestions.stream().map(q -> {
             Map<String, Object> mapped = new HashMap<>(q);
+            // Single-correct: copy correctAnswer → correct
             if (!mapped.containsKey("correct") && mapped.containsKey("correctAnswer")) {
                 mapped.put("correct", mapped.get("correctAnswer"));
+            }
+            // Multi-correct (MIXED): correctAnswers array is already in map; ensure correct = first element
+            if (mapped.containsKey("correctAnswers") && !mapped.containsKey("correct")) {
+                Object multi = mapped.get("correctAnswers");
+                if (multi instanceof java.util.List<?> list && !list.isEmpty()) {
+                    Object first = list.get(0);
+                    if (first instanceof Number n) mapped.put("correct", n.intValue());
+                }
             }
             return mapped;
         }).collect(Collectors.toList());
@@ -282,5 +391,34 @@ public class AiController {
             log.warn("AI service call failed for {}: {}", path, e.getMessage());
         }
         return ResponseEntity.ok(ApiResponse.ok(Map.of("error", "Service IA temporairement indisponible")));
+    }
+
+    /**
+     * Extract text from a PDF stored in the local upload directory.
+     * Returns up to 6000 characters of extracted text, or empty string on failure.
+     */
+    private String extractPdfText(String pdfUrl) {
+        if (pdfUrl == null || pdfUrl.isBlank() || !pdfUrl.toLowerCase().endsWith(".pdf")) return "";
+        try {
+            // pdfUrl is "/uploads/courses/uuid.pdf" — strip leading "/uploads/"
+            String relative = pdfUrl.startsWith("/uploads/")
+                    ? pdfUrl.substring("/uploads/".length())
+                    : pdfUrl.replaceFirst("^/+", "");
+            Path filePath = Paths.get(uploadDir).resolve(relative).normalize();
+            if (!Files.exists(filePath)) {
+                log.debug("PDF not found on disk: {}", filePath);
+                return "";
+            }
+            try (PDDocument doc = Loader.loadPDF(filePath.toFile())) {
+                PDFTextStripper stripper = new PDFTextStripper();
+                stripper.setStartPage(1);
+                stripper.setEndPage(doc.getNumberOfPages()); // read all pages
+                String text = stripper.getText(doc).trim();
+                return text.length() > 12000 ? text.substring(0, 12000) : text;
+            }
+        } catch (Exception e) {
+            log.warn("PDF text extraction failed for {}: {}", pdfUrl, e.getMessage());
+            return "";
+        }
     }
 }

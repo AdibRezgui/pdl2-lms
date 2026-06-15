@@ -22,23 +22,23 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, Sidebar],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
 
       <main class="flex-1 overflow-y-auto">
         <!-- Hero header -->
         <div class="page-hero">
           <div>
-            <h1 class="font-display text-2xl font-bold" style="color:#221f2c">Évaluations</h1>
-            <p class="text-sm mt-0.5" style="color:#948da3">Quiz finaux de cours — les quiz de modules se gèrent dans le contenu du cours</p>
+            <h1 class="font-display text-2xl font-bold" style="color:#1a2d3a">Évaluations</h1>
+            <p class="text-sm mt-0.5" style="color:#5a7a8a">Quiz finaux de cours — les quiz de modules se gèrent dans le contenu du cours</p>
           </div>
           <div class="flex items-center gap-3 flex-wrap">
             <div class="stat-pill">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c5ce0" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#007A8A" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span class="stat-num">{{ totalQuizzes() }}</span><span class="stat-lbl">quiz</span>
             </div>
             <div class="stat-pill">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb7299" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00A8BC" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               <span class="stat-num">{{ totalQuestions() }}</span><span class="stat-lbl">questions</span>
             </div>
             <div class="stat-pill">
@@ -57,7 +57,7 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
             <div class="empty-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/></svg>
             </div>
-            <p class="text-base font-semibold" style="color:#221f2c">Aucun cours</p>
+            <p class="text-base font-semibold" style="color:#1a2d3a">Aucun cours</p>
             <a routerLink="/trainer/courses" class="btn-primary mt-4">Mes cours</a>
           </div>
 
@@ -67,15 +67,15 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
             <div class="course-row" (click)="toggleCourse(ci)">
               <div class="course-dot" [style.background]="courseGradient(ci)"></div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-bold" style="color:#221f2c">{{ cd.course.title }}</p>
-                <p class="text-xs mt-0.5" style="color:#948da3">
+                <p class="text-sm font-bold" style="color:#1a2d3a">{{ cd.course.title }}</p>
+                <p class="text-xs mt-0.5" style="color:#5a7a8a">
                   {{ cd.loading ? 'Chargement...' : (cd.quizzes.length === 0 ? 'Aucun quiz final' : cd.quizzes.length + ' quiz final') }}
                   <span *ngIf="cd.course.category">· {{ cd.course.category }}</span>
                 </p>
               </div>
               <span *ngIf="!cd.loading && cd.quizzes.length > 0" class="course-q-badge">{{ cd.quizzes.length }}</span>
               <div *ngIf="cd.loading" class="spinner-xs"></div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#948da3" stroke-width="2.5"
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a7a8a" stroke-width="2.5"
                 [style.transform]="cd.open ? 'rotate(180deg)' : 'none'"
                 style="transition:transform .22s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
               <a [routerLink]="'/trainer/courses/' + cd.course.id + '/content'"
@@ -94,13 +94,13 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
             <div *ngIf="cd.open && !cd.loading" class="quiz-list">
               <div *ngIf="cd.quizzes.length === 0" class="quiz-empty">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/></svg>
-                <span class="text-xs" style="color:#948da3">Aucun quiz.
-                  <button (click)="openQuizModal(ci)" style="color:#7c5ce0;font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit;font-size:12px">+ Créer un quiz</button>
+                <span class="text-xs" style="color:#5a7a8a">Aucun quiz.
+                  <button (click)="openQuizModal(ci)" style="color:#007A8A;font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit;font-size:12px">+ Créer un quiz</button>
                 </span>
               </div>
               <div *ngFor="let quiz of cd.quizzes" class="quiz-card">
                 <div class="quiz-icon-wrap">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 </div>
                 <div class="quiz-main">
                   <div class="flex items-center gap-2 flex-wrap">
@@ -148,11 +148,11 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
 
           <div class="qm-header">
             <div class="qm-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div>
-              <p class="font-display font-bold text-base" style="color:#221f2c">Créer un quiz de cours</p>
-              <p class="text-xs mt-0.5" style="color:#948da3">
+              <p class="font-display font-bold text-base" style="color:#1a2d3a">Créer un quiz de cours</p>
+              <p class="text-xs mt-0.5" style="color:#5a7a8a">
                 <span class="scope-chip">Cours</span>{{ modalCourseTitle() }}
               </p>
             </div>
@@ -177,8 +177,8 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
             <div class="success-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p class="font-bold text-sm" style="color:#221f2c">Quiz créé avec succès !</p>
-            <p class="text-xs mt-1" style="color:#948da3">{{ quizGenResult()!.questionsCount }} questions · {{ quizGenResult()!.title }}</p>
+            <p class="font-bold text-sm" style="color:#1a2d3a">Quiz créé avec succès !</p>
+            <p class="text-xs mt-1" style="color:#5a7a8a">{{ quizGenResult()!.questionsCount }} questions · {{ quizGenResult()!.title }}</p>
             <button (click)="closeQuizModal()" class="btn-primary mt-4 justify-center" style="width:100%">Fermer</button>
           </div>
 
@@ -240,7 +240,7 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
                   <input [ngModel]="manualQOptions[idx]" (ngModelChange)="manualQOptions[idx]=$event" class="input-field" style="height:34px;font-size:13px" [placeholder]="'Option '+optLetter(idx)+'...'" />
                 </div>
               </div>
-              <p class="text-xs mt-1" style="color:#948da3">
+              <p class="text-xs mt-1" style="color:#5a7a8a">
                 {{ manualQCorrects().size > 1 ? manualQCorrects().size + ' bonnes réponses sélectionnées' : '1 bonne réponse sélectionnée' }}
               </p>
             </div>
@@ -263,102 +263,102 @@ interface ManualQuestion { text: string; options: string[]; correct: number; cor
     </div>
   `,
   styles: [`
-    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(167,139,250,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
+    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(0,180,198,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
     .page-body { padding:24px 32px; display:flex; flex-direction:column; gap:12px; }
-    .stat-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; background:rgba(255,255,255,.8); border:1px solid rgba(167,139,250,.15); box-shadow:0 2px 8px rgba(167,139,250,.07); }
-    .stat-num { font-size:15px; font-weight:800; color:#221f2c; font-family:'Fraunces',Georgia,serif; line-height:1; }
-    .stat-lbl { font-size:11px; color:#948da3; font-weight:500; }
-    .course-section { background:rgba(255,255,255,.72); border:1px solid rgba(167,139,250,.12); border-radius:20px; overflow:hidden; transition:box-shadow .22s; }
-    .course-section:hover { box-shadow:0 4px 20px rgba(167,139,250,.1); }
+    .stat-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; background:rgba(255,255,255,.8); border:1px solid rgba(0,180,198,.15); box-shadow:0 2px 8px rgba(0,180,198,.07); }
+    .stat-num { font-size:15px; font-weight:800; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; line-height:1; }
+    .stat-lbl { font-size:11px; color:#5a7a8a; font-weight:500; }
+    .course-section { background:rgba(255,255,255,.72); border:1px solid rgba(0,180,198,.12); border-radius:20px; overflow:hidden; transition:box-shadow .22s; }
+    .course-section:hover { box-shadow:0 4px 20px rgba(0,180,198,.1); }
     .course-row { display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:pointer; transition:background .18s; }
-    .course-row:hover { background:rgba(167,139,250,.04); }
+    .course-row:hover { background:rgba(0,180,198,.04); }
     .course-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-    .course-q-badge { padding:2px 9px; border-radius:999px; background:rgba(167,139,250,.12); color:#7c5ce0; font-size:11px; font-weight:700; flex-shrink:0; }
-    .manage-link { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:9px; background:rgba(148,141,163,.08); border:1px solid rgba(148,141,163,.18); color:#948da3; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all .18s; }
+    .course-q-badge { padding:2px 9px; border-radius:999px; background:rgba(0,180,198,.12); color:#007A8A; font-size:11px; font-weight:700; flex-shrink:0; }
+    .manage-link { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:9px; background:rgba(148,141,163,.08); border:1px solid rgba(148,141,163,.18); color:#5a7a8a; font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; transition:all .18s; }
     .manage-link:hover { background:rgba(148,141,163,.16); color:#5c5470; }
-    .create-quiz-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:10px; background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.2); color:#7c5ce0; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0; transition:all .18s; }
-    .create-quiz-btn:hover { background:rgba(167,139,250,.2); }
-    .spinner-xs { width:16px; height:16px; border:2px solid rgba(167,139,250,.2); border-top-color:#a78bfa; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
-    .quiz-list { border-top:1px solid rgba(167,139,250,.08); padding:8px 16px 12px; display:flex; flex-direction:column; gap:6px; }
+    .create-quiz-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:10px; background:rgba(0,180,198,.1); border:1px solid rgba(0,180,198,.2); color:#007A8A; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0; transition:all .18s; }
+    .create-quiz-btn:hover { background:rgba(0,180,198,.2); }
+    .spinner-xs { width:16px; height:16px; border:2px solid rgba(0,180,198,.2); border-top-color:#00B4C6; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+    .quiz-list { border-top:1px solid rgba(0,180,198,.08); padding:8px 16px 12px; display:flex; flex-direction:column; gap:6px; }
     .quiz-empty { display:flex; align-items:center; gap:10px; padding:14px 8px; }
-    .quiz-card { display:flex; align-items:center; gap:14px; padding:13px 12px; border-radius:14px; background:rgba(167,139,250,.035); border:1px solid rgba(167,139,250,.1); transition:all .2s; }
-    .quiz-card:hover { background:rgba(167,139,250,.07); border-color:rgba(167,139,250,.2); }
-    .quiz-icon-wrap { width:36px; height:36px; border-radius:12px; background:rgba(167,139,250,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .quiz-card { display:flex; align-items:center; gap:14px; padding:13px 12px; border-radius:14px; background:rgba(0,180,198,.035); border:1px solid rgba(0,180,198,.1); transition:all .2s; }
+    .quiz-card:hover { background:rgba(0,180,198,.07); border-color:rgba(0,180,198,.2); }
+    .quiz-icon-wrap { width:36px; height:36px; border-radius:12px; background:rgba(0,180,198,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .quiz-main { flex:1; min-width:0; }
-    .quiz-title { font-size:13px; font-weight:700; color:#221f2c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+    .quiz-title { font-size:13px; font-weight:700; color:#1a2d3a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
     .module-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(245,165,36,.1); color:#d97706; border:1px solid rgba(245,165,36,.2); flex-shrink:0; }
-    .course-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(167,139,250,.1); color:#7c5ce0; border:1px solid rgba(167,139,250,.2); flex-shrink:0; }
+    .course-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(0,180,198,.1); color:#007A8A; border:1px solid rgba(0,180,198,.2); flex-shrink:0; }
     .quiz-meta { display:flex; align-items:center; gap:5px; margin-top:4px; flex-wrap:wrap; }
-    .meta-item { display:flex; align-items:center; gap:3px; font-size:11px; color:#948da3; }
+    .meta-item { display:flex; align-items:center; gap:3px; font-size:11px; color:#5a7a8a; }
     .meta-sep { font-size:11px; color:#c4bdd6; }
     .quiz-stats { display:flex; gap:16px; flex-shrink:0; }
     .stat-col { display:flex; flex-direction:column; align-items:center; min-width:44px; }
-    .stat-val { font-size:14px; font-weight:800; color:#221f2c; font-family:'Fraunces',Georgia,serif; line-height:1; }
-    .stat-key { font-size:10px; color:#948da3; margin-top:2px; white-space:nowrap; }
+    .stat-val { font-size:14px; font-weight:800; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; line-height:1; }
+    .stat-key { font-size:10px; color:#5a7a8a; margin-top:2px; white-space:nowrap; }
     .quiz-actions { display:flex; gap:6px; flex-shrink:0; }
     .action-btn { width:30px; height:30px; border-radius:9px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .18s; }
     .action-del { background:rgba(242,92,120,.07); color:#f25c78; }
     .action-del:hover { background:rgba(242,92,120,.18); }
     .empty-state { display:flex; flex-direction:column; align-items:center; gap:6px; padding:60px 20px; text-align:center; }
-    .empty-icon { width:64px; height:64px; border-radius:22px; background:rgba(167,139,250,.07); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
-    .skeleton { background:linear-gradient(90deg,rgba(167,139,250,.08) 25%,rgba(167,139,250,.16) 50%,rgba(167,139,250,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
+    .empty-icon { width:64px; height:64px; border-radius:22px; background:rgba(0,180,198,.07); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+    .skeleton { background:linear-gradient(90deg,rgba(0,180,198,.08) 25%,rgba(0,180,198,.16) 50%,rgba(0,180,198,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
     @keyframes shimmer { to { background-position:-200% 0; } }
     @keyframes spin { to { transform:rotate(360deg); } }
     /* Modal */
     .modal-backdrop { position:fixed; inset:0; background:rgba(34,31,44,.45); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:center; justify-content:center; animation:fadeIn .18s ease; }
     @keyframes fadeIn { from{opacity:0}to{opacity:1} }
-    .quiz-modal { background:#fffdfb; border-radius:24px; width:480px; max-width:calc(100vw - 32px); max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(34,31,44,.22); border:1px solid rgba(167,139,250,.18); animation:slideUp .22s cubic-bezier(.16,1,.3,1); }
+    .quiz-modal { background:#f5fdfe; border-radius:24px; width:480px; max-width:calc(100vw - 32px); max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(34,31,44,.22); border:1px solid rgba(0,180,198,.18); animation:slideUp .22s cubic-bezier(.16,1,.3,1); }
     @keyframes slideUp { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
-    .qm-header { display:flex; align-items:center; gap:12px; padding:20px 22px 16px; border-bottom:1px solid rgba(167,139,250,.1); position:sticky; top:0; background:#fffdfb; z-index:1; }
-    .qm-icon { width:40px; height:40px; border-radius:14px; background:rgba(167,139,250,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .scope-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(167,139,250,.14); color:#7c5ce0; margin-right:6px; }
-    .close-btn { width:30px; height:30px; border-radius:9px; background:rgba(167,139,250,.08); border:none; color:#948da3; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .qm-header { display:flex; align-items:center; gap:12px; padding:20px 22px 16px; border-bottom:1px solid rgba(0,180,198,.1); position:sticky; top:0; background:#f5fdfe; z-index:1; }
+    .qm-icon { width:40px; height:40px; border-radius:14px; background:rgba(0,180,198,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .scope-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(0,180,198,.14); color:#007A8A; margin-right:6px; }
+    .close-btn { width:30px; height:30px; border-radius:9px; background:rgba(0,180,198,.08); border:none; color:#5a7a8a; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
     .close-btn:hover { background:rgba(242,92,120,.12); color:#f25c78; }
-    .qm-tabs { display:flex; border-bottom:1px solid rgba(167,139,250,.1); position:sticky; top:76px; background:#fffdfb; z-index:1; }
-    .qm-tab { flex:1; padding:11px 8px; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#948da3; display:flex; align-items:center; justify-content:center; gap:6px; border-bottom:2px solid transparent; transition:all .2s; }
-    .qm-tab:hover { color:#7c5ce0; }
-    .qm-tab-active { color:#7c5ce0 !important; border-bottom-color:#a78bfa !important; }
+    .qm-tabs { display:flex; border-bottom:1px solid rgba(0,180,198,.1); position:sticky; top:76px; background:#f5fdfe; z-index:1; }
+    .qm-tab { flex:1; padding:11px 8px; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#5a7a8a; display:flex; align-items:center; justify-content:center; gap:6px; border-bottom:2px solid transparent; transition:all .2s; }
+    .qm-tab:hover { color:#007A8A; }
+    .qm-tab-active { color:#007A8A !important; border-bottom-color:#00B4C6 !important; }
     .qm-body { padding:20px 22px 22px; }
-    .qm-section-label { font-size:11px; font-weight:700; color:#948da3; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; display:block; }
+    .qm-section-label { font-size:11px; font-weight:700; color:#5a7a8a; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; display:block; }
     .count-selector { display:flex; gap:10px; }
-    .count-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 8px; border-radius:14px; border:2px solid rgba(167,139,250,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:22px; font-weight:700; color:#221f2c; transition:all .22s; }
-    .count-btn:hover { border-color:rgba(167,139,250,.4); }
-    .count-active { border-color:#a78bfa !important; background:rgba(167,139,250,.1) !important; color:#7c5ce0 !important; }
-    .count-sub { font-size:11px; font-weight:500; color:#948da3; }
-    .count-active .count-sub { color:#a78bfa; }
+    .count-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 8px; border-radius:14px; border:2px solid rgba(0,180,198,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:22px; font-weight:700; color:#1a2d3a; transition:all .22s; }
+    .count-btn:hover { border-color:rgba(0,180,198,.4); }
+    .count-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.1) !important; color:#007A8A !important; }
+    .count-sub { font-size:11px; font-weight:500; color:#5a7a8a; }
+    .count-active .count-sub { color:#00B4C6; }
     .type-selector { display:flex; gap:8px; }
-    .qtype-btn { flex:1; padding:9px 8px; border-radius:12px; border:1.5px solid rgba(167,139,250,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#948da3; transition:all .2s; }
-    .qtype-btn:hover { border-color:rgba(167,139,250,.4); }
-    .qtype-active { border-color:#a78bfa !important; background:rgba(167,139,250,.1) !important; color:#7c5ce0 !important; }
+    .qtype-btn { flex:1; padding:9px 8px; border-radius:12px; border:1.5px solid rgba(0,180,198,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#5a7a8a; transition:all .2s; }
+    .qtype-btn:hover { border-color:rgba(0,180,198,.4); }
+    .qtype-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.1) !important; color:#007A8A !important; }
     .qm-success { padding:28px 22px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
     .success-icon { width:56px; height:56px; border-radius:20px; background:rgba(110,231,183,.12); border:1px solid rgba(110,231,183,.3); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
-    .qm-divider { height:1px; background:rgba(167,139,250,.12); margin:12px 0; }
+    .qm-divider { height:1px; background:rgba(0,180,198,.12); margin:12px 0; }
     .manual-q-list { display:flex; flex-direction:column; gap:6px; }
-    .manual-q-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(167,139,250,.05); border:1px solid rgba(167,139,250,.1); }
-    .manual-q-num { width:22px; height:22px; border-radius:7px; background:rgba(167,139,250,.15); color:#7c5ce0; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .manual-q-text { font-size:12px; color:#4a4458; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .manual-q-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(0,180,198,.05); border:1px solid rgba(0,180,198,.1); }
+    .manual-q-num { width:22px; height:22px; border-radius:7px; background:rgba(0,180,198,.15); color:#007A8A; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .manual-q-text { font-size:12px; color:#2c3d4e; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .manual-opts { display:flex; flex-direction:column; gap:6px; }
     .manual-opt-row { display:flex; align-items:center; gap:8px; }
-    .opt-letter-btn { width:30px; height:34px; border-radius:8px; background:rgba(167,139,250,.08); border:1.5px solid rgba(167,139,250,.18); color:#948da3; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s; font-family:inherit; }
-    .opt-letter-btn:hover { background:rgba(167,139,250,.15); }
-    .opt-letter-correct { background:rgba(139,110,242,.18) !important; border-color:#a78bfa !important; color:#7c5ce0 !important; }
+    .opt-letter-btn { width:30px; height:34px; border-radius:8px; background:rgba(0,180,198,.08); border:1.5px solid rgba(0,180,198,.18); color:#5a7a8a; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s; font-family:inherit; }
+    .opt-letter-btn:hover { background:rgba(0,180,198,.15); }
+    .opt-letter-correct { background:rgba(0,180,198,.18) !important; border-color:#00B4C6 !important; color:#007A8A !important; }
     .opt-count-row { display:flex; gap:6px; }
-    .opt-count-btn { flex:1; padding:8px 4px; border-radius:10px; border:1.5px solid rgba(167,139,250,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:13px; font-weight:700; color:#948da3; transition:all .18s; }
-    .opt-count-btn:hover { border-color:rgba(167,139,250,.35); color:#7c5ce0; }
-    .opt-count-active { border-color:#a78bfa !important; background:rgba(167,139,250,.1) !important; color:#7c5ce0 !important; }
+    .opt-count-btn { flex:1; padding:8px 4px; border-radius:10px; border:1.5px solid rgba(0,180,198,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:13px; font-weight:700; color:#5a7a8a; transition:all .18s; }
+    .opt-count-btn:hover { border-color:rgba(0,180,198,.35); color:#007A8A; }
+    .opt-count-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.1) !important; color:#007A8A !important; }
     .multi-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(245,165,36,.12); color:#d97706; border:1px solid rgba(245,165,36,.25); flex-shrink:0; }
     .spinner-sm { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
     .field { margin-bottom:16px; }
-    .flabel { display:block; font-size:11px; font-weight:700; color:#948da3; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
-    .input-field { width:100%; padding:9px 12px; border-radius:12px; border:1px solid rgba(167,139,250,.2); background:rgba(255,255,255,.7); font-size:14px; color:#221f2c; font-family:inherit; outline:none; transition:border .2s; box-sizing:border-box; }
-    .input-field:focus { border-color:#a78bfa; background:#fff; }
+    .flabel { display:block; font-size:11px; font-weight:700; color:#5a7a8a; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+    .input-field { width:100%; padding:9px 12px; border-radius:12px; border:1px solid rgba(0,180,198,.2); background:rgba(255,255,255,.7); font-size:14px; color:#1a2d3a; font-family:inherit; outline:none; transition:border .2s; box-sizing:border-box; }
+    .input-field:focus { border-color:#00B4C6; background:#fff; }
     .resize-none { resize:none; }
     .err-banner { padding:10px 14px; border-radius:12px; background:rgba(242,92,120,.08); border:1px solid rgba(242,92,120,.22); color:#f25c78; font-size:13px; }
-    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:linear-gradient(135deg,#a78bfa,#fb7299); border:none; color:white; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(167,139,250,.3); white-space:nowrap; text-decoration:none; }
+    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:linear-gradient(135deg,#00B4C6,#00A8BC); border:none; color:white; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(0,180,198,.3); white-space:nowrap; text-decoration:none; }
     .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
     .btn-primary:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
-    .btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.2); color:#7c5ce0; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
-    .btn-secondary:hover { background:rgba(167,139,250,.18); }
+    .btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:rgba(0,180,198,.1); border:1px solid rgba(0,180,198,.2); color:#007A8A; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
+    .btn-secondary:hover { background:rgba(0,180,198,.18); }
     .w-full { width:100%; }
     .ml-auto { margin-left:auto; }
   `],
@@ -395,11 +395,11 @@ export class TrainerEvaluations implements OnInit {
   ];
 
   private gradients = [
-    'linear-gradient(135deg,#a78bfa,#fb7299)',
-    'linear-gradient(135deg,#60a5fa,#a78bfa)',
+    'linear-gradient(135deg,#00B4C6,#00A8BC)',
+    'linear-gradient(135deg,#60a5fa,#00B4C6)',
     'linear-gradient(135deg,#34d399,#60a5fa)',
-    'linear-gradient(135deg,#fbbf24,#fb7299)',
-    'linear-gradient(135deg,#f472b6,#a78bfa)',
+    'linear-gradient(135deg,#fbbf24,#00A8BC)',
+    'linear-gradient(135deg,#f472b6,#00B4C6)',
   ];
 
   get role()     { return this.auth.user()?.role ?? 'TRAINER'; }

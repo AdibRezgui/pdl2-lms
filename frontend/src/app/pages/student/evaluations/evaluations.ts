@@ -33,24 +33,24 @@ interface CourseState {
   standalone: true,
   imports: [CommonModule, RouterLink, Sidebar],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
 
       <main class="flex-1 overflow-y-auto">
         <!-- Header -->
         <div class="page-hero">
           <div>
-            <h1 class="font-display text-2xl font-bold" style="color:#221f2c">Badges & Certifications</h1>
-            <p class="text-sm mt-0.5" style="color:#948da3">Complétez tous les quiz d'un cours pour réclamer votre badge</p>
+            <h1 class="font-display text-2xl font-bold" style="color:#1a2d3a">Mes Badges</h1>
+            <p class="text-sm mt-0.5" style="color:#5a7a8a">Le badge est attribué automatiquement dès que tous les quiz sont validés à 70%</p>
           </div>
           <div class="flex items-center gap-3 flex-wrap">
             <div class="stat-pill">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c5ce0" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#f5a524" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               <span class="stat-num">{{ earnedCount() }}</span><span class="stat-lbl">badges obtenus</span>
             </div>
             <div class="stat-pill">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span class="stat-num">{{ readyCount() }}</span><span class="stat-lbl">à réclamer</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              <span class="stat-num">{{ states().length }}</span><span class="stat-lbl">cours inscrits</span>
             </div>
           </div>
         </div>
@@ -66,8 +66,8 @@ interface CourseState {
             <div class="empty-icon">
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             </div>
-            <p class="font-semibold" style="color:#221f2c">Aucune formation</p>
-            <p class="text-xs mt-1" style="color:#948da3">Inscrivez-vous à un cours pour commencer</p>
+            <p class="font-semibold" style="color:#1a2d3a">Aucune formation</p>
+            <p class="text-xs mt-1" style="color:#5a7a8a">Inscrivez-vous à un cours pour commencer</p>
             <a routerLink="/student/courses" class="btn-primary mt-4">Explorer les cours</a>
           </div>
 
@@ -105,18 +105,14 @@ interface CourseState {
                       Prêt à réclamer
                     </span>
                   </div>
-                  <p class="text-xs" style="color:#948da3">{{ s.enrollment.course.category }}</p>
+                  <p class="text-xs" style="color:#5a7a8a">{{ s.enrollment.course.category }}</p>
                 </div>
 
-                <!-- Claim / earned button -->
-                <button *ngIf="isReady(s) && !s.enrollment.badgeEarned"
-                  (click)="claimBadge(s)"
-                  [disabled]="claiming === s.enrollment.id"
-                  class="btn-claim">
-                  <svg *ngIf="claiming !== s.enrollment.id" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  <div *ngIf="claiming === s.enrollment.id" class="spinner-sm"></div>
-                  {{ claiming === s.enrollment.id ? 'En cours...' : 'Réclamer le badge' }}
-                </button>
+                <!-- Auto-claim spinner -->
+                <div *ngIf="claiming === s.enrollment.id" class="btn-claim" style="pointer-events:none">
+                  <div class="spinner-sm"></div>
+                  Attribution du badge…
+                </div>
 
                 <div *ngIf="s.enrollment.badgeEarned" class="earned-badge">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -127,10 +123,10 @@ interface CourseState {
               <!-- Progress bar -->
               <div class="mt-3 mb-3">
                 <div class="flex justify-between items-center mb-1">
-                  <span class="text-xs" style="color:#948da3">Progression du cours</span>
-                  <span class="text-xs font-bold" style="color:#7c5ce0">{{ s.enrollment.progress }}%</span>
+                  <span class="text-xs" style="color:#5a7a8a">Progression du cours</span>
+                  <span class="text-xs font-bold" style="color:#007A8A">{{ s.enrollment.badgeEarned ? 100 : s.enrollment.progress }}%</span>
                 </div>
-                <div class="prog-track"><div class="prog-fill" [style.width.%]="s.enrollment.progress"></div></div>
+                <div class="prog-track"><div class="prog-fill" [style.width.%]="s.enrollment.badgeEarned ? 100 : s.enrollment.progress"></div></div>
               </div>
 
               <!-- Loading state -->
@@ -180,34 +176,34 @@ interface CourseState {
     </div>
   `,
   styles: [`
-    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(167,139,250,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
+    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(0,180,198,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
     .page-body { padding:24px 32px; display:flex; flex-direction:column; gap:14px; }
-    .stat-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; background:rgba(255,255,255,.8); border:1px solid rgba(167,139,250,.15); box-shadow:0 2px 8px rgba(167,139,250,.07); }
-    .stat-num { font-size:15px; font-weight:800; color:#221f2c; font-family:'Fraunces',Georgia,serif; line-height:1; }
-    .stat-lbl { font-size:11px; color:#948da3; font-weight:500; }
+    .stat-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; background:rgba(255,255,255,.8); border:1px solid rgba(0,180,198,.15); box-shadow:0 2px 8px rgba(0,180,198,.07); }
+    .stat-num { font-size:15px; font-weight:800; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; line-height:1; }
+    .stat-lbl { font-size:11px; color:#5a7a8a; font-weight:500; }
 
     /* Badge card */
-    .badge-card { display:flex; align-items:flex-start; gap:16px; padding:20px 22px; border-radius:22px; background:rgba(255,255,255,.82); border:1px solid rgba(167,139,250,.12); transition:all .22s; position:relative; overflow:hidden; }
-    .badge-card:hover { box-shadow:0 6px 28px rgba(167,139,250,.13); border-color:rgba(167,139,250,.25); }
+    .badge-card { display:flex; align-items:flex-start; gap:16px; padding:20px 22px; border-radius:22px; background:rgba(255,255,255,.82); border:1px solid rgba(0,180,198,.12); transition:all .22s; position:relative; overflow:hidden; }
+    .badge-card:hover { box-shadow:0 6px 28px rgba(0,180,198,.13); border-color:rgba(0,180,198,.25); }
     .badge-card-earned { background:rgba(245,165,36,.03); border-color:rgba(245,165,36,.22); }
-    .badge-accent { width:4px; height:100%; position:absolute; left:0; top:0; bottom:0; border-radius:4px 0 0 4px; background:rgba(167,139,250,.25); }
-    .accent-earned { background:linear-gradient(180deg,#f5a524,#fb7299); }
-    .accent-ready { background:linear-gradient(180deg,#a78bfa,#fb7299); }
+    .badge-accent { width:4px; height:100%; position:absolute; left:0; top:0; bottom:0; border-radius:4px 0 0 4px; background:rgba(0,180,198,.25); }
+    .accent-earned { background:linear-gradient(180deg,#f5a524,#00A8BC); }
+    .accent-ready { background:linear-gradient(180deg,#00B4C6,#00A8BC); }
 
     /* Badge icon */
-    .badge-icon-wrap { width:52px; height:52px; border-radius:16px; background:rgba(167,139,250,.08); border:1px solid rgba(167,139,250,.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#c4bdd6; }
-    .badge-icon-earned { background:linear-gradient(135deg,rgba(245,165,36,.15),rgba(251,114,153,.1)); border-color:rgba(245,165,36,.3); color:#f5a524; }
-    .badge-icon-ready { background:rgba(167,139,250,.12); border-color:rgba(167,139,250,.3); color:#a78bfa; }
+    .badge-icon-wrap { width:52px; height:52px; border-radius:16px; background:rgba(0,180,198,.08); border:1px solid rgba(0,180,198,.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#c4bdd6; }
+    .badge-icon-earned { background:linear-gradient(135deg,rgba(245,165,36,.15),rgba(0,168,188,.1)); border-color:rgba(245,165,36,.3); color:#f5a524; }
+    .badge-icon-ready { background:rgba(0,180,198,.12); border-color:rgba(0,180,198,.3); color:#00B4C6; }
 
     /* Content */
     .badge-content { flex:1; min-width:0; }
-    .badge-course-title { font-size:15px; font-weight:700; color:#221f2c; font-family:'Fraunces',Georgia,serif; }
+    .badge-course-title { font-size:15px; font-weight:700; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; }
     .pill-earned { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:2px 9px; border-radius:999px; background:rgba(245,165,36,.12); color:#d97706; border:1px solid rgba(245,165,36,.25); }
-    .pill-ready { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:2px 9px; border-radius:999px; background:rgba(167,139,250,.14); color:#7c5ce0; border:1px solid rgba(167,139,250,.28); }
+    .pill-ready { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:2px 9px; border-radius:999px; background:rgba(0,180,198,.14); color:#007A8A; border:1px solid rgba(0,180,198,.28); }
 
     /* Progress */
-    .prog-track { height:5px; border-radius:99px; background:rgba(167,139,250,.12); overflow:hidden; }
-    .prog-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#a78bfa,#fb7299); transition:width .5s cubic-bezier(.23,1,.32,1); }
+    .prog-track { height:5px; border-radius:99px; background:rgba(0,180,198,.12); overflow:hidden; }
+    .prog-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#00B4C6,#00A8BC); transition:width .5s cubic-bezier(.23,1,.32,1); }
 
     /* Conditions */
     .conditions-row { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
@@ -217,24 +213,24 @@ interface CourseState {
     .cond-pass { background:rgba(31,157,111,.07); border-color:rgba(31,157,111,.22); color:#1f9d6f; }
     .cond-fail { background:rgba(239,68,68,.06); border-color:rgba(239,68,68,.18); color:#ef4444; }
     .cond-final { font-weight:700; }
-    .cond-none { background:rgba(148,141,163,.07); border-color:rgba(148,141,163,.18); color:#948da3; max-width:none; }
+    .cond-none { background:rgba(148,141,163,.07); border-color:rgba(148,141,163,.18); color:#5a7a8a; max-width:none; }
     .cond-score { font-size:10px; font-weight:800; margin-left:2px; flex-shrink:0; }
-    .cond-learn-btn { display:inline-flex; align-items:center; gap:4px; padding:5px 11px; border-radius:10px; background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.2); color:#7c5ce0; font-size:11px; font-weight:700; text-decoration:none; transition:all .18s; white-space:nowrap; margin-left:auto; }
-    .cond-learn-btn:hover { background:rgba(167,139,250,.2); }
+    .cond-learn-btn { display:inline-flex; align-items:center; gap:4px; padding:5px 11px; border-radius:10px; background:rgba(0,180,198,.1); border:1px solid rgba(0,180,198,.2); color:#007A8A; font-size:11px; font-weight:700; text-decoration:none; transition:all .18s; white-space:nowrap; margin-left:auto; }
+    .cond-learn-btn:hover { background:rgba(0,180,198,.2); }
 
     /* Claim */
-    .btn-claim { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:14px; background:linear-gradient(135deg,#f5a524,#fb7299); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 16px rgba(245,165,36,.32); white-space:nowrap; flex-shrink:0; }
+    .btn-claim { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:14px; background:linear-gradient(135deg,#f5a524,#00A8BC); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 16px rgba(245,165,36,.32); white-space:nowrap; flex-shrink:0; }
     .btn-claim:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 22px rgba(245,165,36,.45); }
     .btn-claim:disabled { opacity:.55; cursor:default; transform:none; box-shadow:none; }
     .earned-badge { display:inline-flex; align-items:center; gap:7px; padding:10px 18px; border-radius:14px; background:rgba(245,165,36,.1); border:1px solid rgba(245,165,36,.28); color:#d97706; font-size:13px; font-weight:700; flex-shrink:0; }
 
     /* Misc */
     .empty-state { display:flex; flex-direction:column; align-items:center; gap:6px; padding:60px 20px; text-align:center; }
-    .empty-icon { width:64px; height:64px; border-radius:22px; background:rgba(167,139,250,.07); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
-    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border-radius:14px; background:linear-gradient(135deg,#a78bfa,#fb7299); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(167,139,250,.3); text-decoration:none; }
+    .empty-icon { width:64px; height:64px; border-radius:22px; background:rgba(0,180,198,.07); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border-radius:14px; background:linear-gradient(135deg,#00B4C6,#00A8BC); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(0,180,198,.3); text-decoration:none; }
     .btn-primary:hover { transform:translateY(-1px); }
     .spinner-sm { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
-    .skeleton { background:linear-gradient(90deg,rgba(167,139,250,.08) 25%,rgba(167,139,250,.16) 50%,rgba(167,139,250,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
+    .skeleton { background:linear-gradient(90deg,rgba(0,180,198,.08) 25%,rgba(0,180,198,.16) 50%,rgba(0,180,198,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
     @keyframes shimmer { to { background-position:-200% 0; } }
     @keyframes spin { to { transform:rotate(360deg); } }
   `],
@@ -274,6 +270,10 @@ export class StudentEvaluations implements OnInit {
             this.states.update(list => list.map((item, i) =>
               i === index ? { ...item, quizzes: quizzes ?? [], attempts: attempts ?? [], loading: false } : item
             ));
+            const updated = this.states()[index];
+            if (updated && this.isReady(updated) && !updated.enrollment.badgeEarned) {
+              this.claimBadge(updated);
+            }
           },
           error: () => this.patchState(index, { quizzes: quizzes ?? [], loading: false }),
         });
@@ -317,7 +317,7 @@ export class StudentEvaluations implements OnInit {
         this.claiming = '';
         this.states.update(list => list.map(item =>
           item.enrollment.id === s.enrollment.id
-            ? { ...item, enrollment: { ...item.enrollment, badgeEarned: true } }
+            ? { ...item, enrollment: { ...item.enrollment, badgeEarned: true, completed: true, progress: 100 } }
             : item
         ));
       },

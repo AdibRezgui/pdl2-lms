@@ -4,6 +4,7 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface Toast {
   id: number;
+  title?: string;
   message: string;
   type: ToastType;
 }
@@ -20,16 +21,17 @@ export class ToastService {
   toasts = signal<Toast[]>([]);
   confirmState = signal<ConfirmState | null>(null);
 
-  private add(message: string, type: ToastType) {
+  private add(message: string, type: ToastType, title?: string) {
     const id = ++_id;
-    this.toasts.update(t => [...t, { id, message, type }]);
-    setTimeout(() => this.dismiss(id), 4200);
+    this.toasts.update(t => [...t, { id, message, type, title }]);
+    const duration = type === 'error' ? 6200 : 4200;
+    setTimeout(() => this.dismiss(id), duration);
   }
 
-  success(message: string) { this.add(message, 'success'); }
-  error(message: string)   { this.add(message, 'error');   }
-  info(message: string)    { this.add(message, 'info');    }
-  warning(message: string) { this.add(message, 'warning'); }
+  success(message: string, title?: string) { this.add(message, 'success', title); }
+  error(message: string, title?: string)   { this.add(message, 'error',   title); }
+  info(message: string, title?: string)    { this.add(message, 'info',    title); }
+  warning(message: string, title?: string) { this.add(message, 'warning', title); }
 
   dismiss(id: number) {
     this.toasts.update(t => t.filter(x => x.id !== id));

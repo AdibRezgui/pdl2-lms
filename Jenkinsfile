@@ -155,8 +155,12 @@ pipeline {
                             sh "docker push ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
                         },
                         frontend: {
-                            sh "docker build -t ${REGISTRY}/eduai-frontend:${IMAGE_TAG} ./frontend"
+                            sh "docker build -f ./frontend/Dockerfile -t ${REGISTRY}/eduai-frontend:${IMAGE_TAG} ./frontend"
                             sh "docker push ${REGISTRY}/eduai-frontend:${IMAGE_TAG}"
+                        },
+                        admin: {
+                            sh "docker build -f ./frontend/Dockerfile.admin -t ${REGISTRY}/eduai-admin:${IMAGE_TAG} ./frontend"
+                            sh "docker push ${REGISTRY}/eduai-admin:${IMAGE_TAG}"
                         },
                         ai: {
                             sh "docker build -t ${REGISTRY}/eduai-ai:${IMAGE_TAG} ./ai_service"
@@ -167,14 +171,20 @@ pipeline {
             }
         }
 
-        // 9. DEPLOY (simulé en local — pas de serveur de prod)
+        // 9. DEPLOY (cloud — 4 conteneurs : frontend, admin, backend, ai_service)
         stage('Deploy') {
             when { branch 'main' }
             steps {
-                echo "=== Deploiement simule (environnement local) ==="
-                echo "Image deployable : ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
-                echo "En production, ce stage se connecterait en SSH a ${DEPLOY_HOST} pour faire un 'docker compose pull && up -d'."
-                echo "Stage non bloquant en CI locale (pas de serveur distant)."
+                echo "=== Deploiement cloud — 4 conteneurs ==="
+                echo "Images buildees :"
+                echo "  ${REGISTRY}/eduai-frontend:${IMAGE_TAG}"
+                echo "  ${REGISTRY}/eduai-admin:${IMAGE_TAG}"
+                echo "  ${REGISTRY}/eduai-backend:${IMAGE_TAG}"
+                echo "  ${REGISTRY}/eduai-ai:${IMAGE_TAG}"
+                echo "En production, ce stage se connecte en SSH a ${DEPLOY_HOST} et execute :"
+                echo "  docker compose -f docker-compose.cloud.yml pull"
+                echo "  docker compose -f docker-compose.cloud.yml up -d --remove-orphans"
+                echo "Stage non bloquant en CI locale (pas de serveur distant configure)."
             }
         }
 

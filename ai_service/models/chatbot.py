@@ -14,7 +14,7 @@ from typing import List, Dict, Optional, Any
 logger = logging.getLogger("eduai.chatbot")
 
 GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "llama-3.1-8b-instant"
 
 
 def _groq_key() -> str:
@@ -381,18 +381,84 @@ def _call_groq(message: str, history: List[Dict], ctx: Dict) -> Optional[str]:
 
     messages.append({"role": "user", "content": message})
 
-    try:
-        resp = httpx.post(
-            GROQ_URL,
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.65},
-            timeout=20,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        logger.warning("Groq call failed: %s", e)
-        return None
+    for attempt in range(2):
+        try:
+            resp = httpx.post(
+                GROQ_URL,
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={"model": GROQ_MODEL, "messages": messages, "max_tokens": 600, "temperature": 0.6},
+                timeout=8,
+            )
+            if resp.status_code == 429:
+                logger.warning("Groq chatbot 429 rate limit (attempt %d)", attempt + 1)
+                continue
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.warning("Groq chatbot attempt %d failed: %s", attempt + 1, e)
+    return None
+
+
+def _smart_fallback(message: str, ctx: Dict) -> str:
+    """
+    Rich rule-based fallback used when Groq is unavailable.
+    Handles common pedagogical questions about the student's own courses.
+    """
+    low = message.lower()
+    name = (ctx.get("name") or "").split()[0] if ctx.get("name") else ""
+    n = f", {name}" if name else ""
+    enrollments = ctx.get("enrollments", [])
+    available   = ctx.get("availableCourses", [])
+
+    in_progress = [e for e in enrollments if not e.get("completed") and e.get("progress", 0) > 0]
+    completed   = [e for e in enrollments if e.get("completed")]
+
+    # "comment" / "qu'est-ce" / "explique" → redirect to course or give generic answer
+    if any(kw in low for kw in ("comment", "qu'est", "expliqu", "définition", "différence",
+                                "pourquoi", "quand", "signifie", "veut dire", "c'est quoi")):
+        if in_progress:
+            c = in_progress[0]
+            return (f"Pour répondre au mieux à votre question{n}, je vous invite à consulter "
+                    f"le contenu de votre cours **{c.get('courseTitle')}** (vous êtes à {c.get('progress')}%).\n\n"
+                    "Si vous avez une question précise sur une leçon, revenez me voir avec plus de contexte "
+                    "et je ferai de mon mieux pour vous aider !")
+        return (f"Bonne question{n} ! Pour une réponse précise sur ce concept, "
+                "consultez les leçons de votre cours — le contenu pédagogique détaille "
+                "chaque notion point par point.\n\n"
+                "Tapez **\"ma progression\"** pour voir où vous en êtes.")
+
+    # "merci" / "super" / "bravo"
+    if any(kw in low for kw in ("merci", "super", "bravo", "parfait", "génial", "cool", "top")):
+        return f"Avec plaisir{n} ! 😊 N'hésitez pas si vous avez d'autres questions."
+
+    # "pas compris" / "difficile" / "dur"
+    if any(kw in low for kw in ("compris", "difficile", "dur", "compliqué", "perdu", "confus")):
+        if in_progress:
+            c = in_progress[0]
+            return (f"Ne vous découragez pas{n} ! 💪\n\n"
+                    f"Pour **{c.get('courseTitle')}** : repassez les leçons précédentes, "
+                    "prenez des notes et n'hésitez pas à faire les quiz plusieurs fois.\n\n"
+                    "**Conseils :**\n"
+                    "- Revenez sur les leçons difficiles\n"
+                    "- Pratiquez les exemples\n"
+                    "- Consultez les explications après chaque quiz")
+        return (f"Ne vous découragez pas{n} ! 💪 La régularité est la clé de l'apprentissage.\n\n"
+                "Inscrivez-vous à un cours pour commencer votre parcours !")
+
+    # Generic fallback with context
+    lines = [f"Je vais vous aider{n} ! Voici ce que je peux faire pour vous :\n"]
+    if in_progress:
+        best = max(in_progress, key=lambda e: e.get("progress", 0))
+        lines.append(f"📖 Continuez **{best.get('courseTitle')}** — {best.get('progress')}% complété")
+    if available:
+        lines.append(f"🎓 **{len(available)}** cours disponibles dans le catalogue")
+    lines.append("\n**Posez-moi une question comme :**")
+    lines.append("- *\"Ma progression\"* — votre avancement par cours")
+    lines.append("- *\"Mes quiz\"* — vos résultats et scores")
+    lines.append("- *\"Recommandation\"* — cours adaptés à votre profil")
+    lines.append("- *\"Liste des cours\"* — tout le catalogue")
+    lines.append("- *\"Mes certificats\"* — badges et attestations")
+    return "\n".join(lines)
 
 
 # ── Main chatbot class ────────────────────────────────────────────────────────
@@ -408,6 +474,9 @@ class PedagogicalChatbot:
         ctx     = user_context or {}
         history = history or []
         low     = message.strip().lower()
+
+        if not message.strip():
+            return _resp_help(ctx)
 
         # 1. Greeting
         if _GREETING_RE.search(low):
@@ -437,28 +506,17 @@ class PedagogicalChatbot:
         if _has(low, _RECO_KW):
             return _resp_recommendation(ctx)
 
-        # 8. Dynamic course search
+        # 8. Dynamic course search (must come before Groq to save quota)
         qw = _words(low)
         if qw:
             match = _resp_search(qw, ctx)
             if match:
                 return match
 
-        # 9. Groq LLM for free-form / course-specific questions
+        # 9. Groq LLM — free-form / course-specific questions
         llm_reply = _call_groq(message, history, ctx)
         if llm_reply:
             return llm_reply
 
-        # 10. Final fallback
-        name = (ctx.get("name") or "").split()[0] if ctx.get("name") else ""
-        in_progress = [e for e in ctx.get("enrollments", [])
-                       if not e.get("completed") and e.get("progress", 0) > 0]
-        if in_progress:
-            return (f"Je n'ai pas trouvé de réponse précise{', ' + name if name else ''}.\n\n"
-                    f"En attendant, vous avez **{in_progress[0].get('courseTitle')}** en cours — continuez !\n\n"
-                    "Tapez **\"aide\"** pour voir ce que je sais faire.")
-
-        return ("Je n'ai pas trouvé de cours correspondant.\n\n"
-                "Essayez :\n- *\"liste des cours\"* pour le catalogue\n"
-                "- *\"recommandation\"* pour une suggestion personnalisée\n"
-                "- *\"aide\"* pour mes fonctionnalités")
+        # 10. Rich rule-based fallback (Groq unavailable)
+        return _smart_fallback(message, ctx)

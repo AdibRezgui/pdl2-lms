@@ -1,0 +1,102 @@
+version: '3.8'
+
+# ── Cloud deployment — 4 app containers only ──────────────────────────────────
+# Database is managed externally (Supabase / Railway / RDS / etc.)
+# Set all variables in a .env file or your cloud provider's secrets manager.
+#
+# Required env vars:
+#   DATABASE_URL     jdbc:postgresql://<host>:<port>/<db>
+#   POSTGRES_USER    db username
+#   POSTGRES_PASSWORD db password
+#   JWT_SECRET       min 32 chars
+#   REGISTRY         docker registry prefix  (e.g. registry.hub.docker.com/eduai)
+#   IMAGE_TAG        image version           (default: latest)
+#   GROQ_API_KEY     Groq cloud API key
+#   APP_BASE_URL     public URL of the app   (e.g. https://eduai.yourdomain.com)
+#   CORS_ORIGINS     comma-separated origins (frontend + admin URLs)
+
+services:
+
+  # ── Main frontend (Student / Trainer) — port 80 ───────────────────────────
+  frontend:
+    image: ${REGISTRY}/eduai-frontend:${IMAGE_TAG:-latest}
+    container_name: eduai_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - eduai_network
+
+  # ── Admin panel — port 4300 ───────────────────────────────────────────────
+  admin:
+    image: ${REGISTRY}/eduai-admin:${IMAGE_TAG:-latest}
+    container_name: eduai_admin
+    restart: unless-stopped
+    ports:
+      - "4300:4300"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - eduai_network
+
+  # ── Spring Boot backend — port 8080 ──────────────────────────────────────
+  backend:
+    image: ${REGISTRY}/eduai-backend:${IMAGE_TAG:-latest}
+    container_name: eduai_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_SERVICE_URL=http://ai_service:8000
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:4300}
+      - UPLOAD_DIR=/app/uploads
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@eduai.tn}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost}
+    volumes:
+      - backend_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+    networks:
+      - eduai_network
+
+  # ── Python AI microservice — port 8000 ───────────────────────────────────
+  ai_service:
+    image: ${REGISTRY}/eduai-ai:${IMAGE_TAG:-latest}
+    container_name: eduai_ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-eduai_db}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - eduai_network
+
+volumes:
+  backend_uploads:
+
+networks:
+  eduai_network:
+    driver: bridge

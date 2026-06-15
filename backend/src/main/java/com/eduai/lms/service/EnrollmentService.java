@@ -53,7 +53,17 @@ public class EnrollmentService {
     }
 
     public List<Enrollment> getMyEnrollments(User student) {
-        return enrollmentRepository.findByUser(student);
+        List<Enrollment> list = enrollmentRepository.findByUser(student);
+        // Repair legacy records: badge earned but progress < 100 (created before the auto-fix)
+        list.forEach(e -> {
+            if (e.isBadgeEarned() && e.getProgress() < 100) {
+                e.setProgress(100);
+                e.setCompleted(true);
+                if (e.getCompletedAt() == null) e.setCompletedAt(LocalDateTime.now());
+                enrollmentRepository.save(e);
+            }
+        });
+        return list;
     }
 
     public Enrollment updateProgress(UUID enrollmentId, int progress, User student) {
@@ -64,12 +74,17 @@ public class EnrollmentService {
             throw new IllegalStateException("Accès refusé");
         }
 
-        enrollment.setProgress(Math.min(100, Math.max(0, progress)));
         enrollment.setLastAccessedAt(LocalDateTime.now());
 
-        if (progress >= 100 && !enrollment.isCompleted()) {
-            enrollment.setCompleted(true);
-            enrollment.setCompletedAt(LocalDateTime.now());
+        // Badge already earned: keep progress at 100, never overwrite
+        if (enrollment.isBadgeEarned()) {
+            enrollment.setProgress(100);
+        } else {
+            enrollment.setProgress(Math.min(100, Math.max(0, progress)));
+            if (progress >= 100 && !enrollment.isCompleted()) {
+                enrollment.setCompleted(true);
+                enrollment.setCompletedAt(LocalDateTime.now());
+            }
         }
 
         return enrollmentRepository.save(enrollment);
@@ -113,6 +128,7 @@ public class EnrollmentService {
 
         enrollment.setBadgeEarned(true);
         enrollment.setCompleted(true);
+        enrollment.setProgress(100);
         if (enrollment.getCompletedAt() == null) enrollment.setCompletedAt(LocalDateTime.now());
         return enrollmentRepository.save(enrollment);
     }

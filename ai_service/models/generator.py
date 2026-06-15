@@ -1,12 +1,6 @@
 """
-AI Quiz Generator.
-Primary: Groq LLM (free) — truly content-adaptive.
-Fallback: keyword-based static banks.
-
-Setup Groq (free, no credit card):
-  1. https://console.groq.com  → create account → API Keys → Create Key
-  2. Set env var: GROQ_API_KEY=gsk_...
-  3. Restart the AI service
+AI Quiz Generator — Groq cloud backend (llama-3.1-8b-instant).
+Falls back to keyword-based static banks when GROQ_API_KEY is absent.
 """
 
 import os
@@ -14,51 +8,134 @@ import re
 import json
 import random
 import logging
+import time
 import httpx
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger("eduai.generator")
 
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"  # stronger instruction-following, free tier
+GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-8b-instant"
 
 
 def _groq_key() -> str:
-    """Read key at call time so .env loaded in main.py is always visible."""
     return os.getenv("GROQ_API_KEY", "")
 
 QUIZ_PROMPT_SINGLE = """\
-Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM (choix unique) basées sur le contenu ci-dessous.
+Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM à CHOIX UNIQUE basées sur le texte ci-dessous.
 
+=== TEXTE SOURCE ===
 {content}
+=== FIN DU TEXTE ===
 
-RÈGLES ABSOLUES — respecte-les strictement :
-1. Chaque question porte UNIQUEMENT sur le contenu fourni
-2. EXACTEMENT 4 options (ni plus, ni moins) — pas de doublons dans les options
-3. correctAnswer = index 0, 1, 2 ou 3 — VARIE la position (pas toujours 0)
-4. Explication courte de la bonne réponse
-5. points = 10, 15 ou 20
-6. Rédige en français
+RÈGLES ABSOLUES — violations = réponse rejetée :
+1. FORMULATION AUTONOME : la question doit être compréhensible SANS le texte. INTERDIT : "selon l'énoncé", "d'après le texte", "dans le document", "selon le passage". Reformule le contexte DANS la question elle-même.
+2. DIVERSITÉ COGNITIVE OBLIGATOIRE — répartis les {count} questions ainsi :
+   - 30% RAPPEL : "Quel est…", "Quelle est la définition de…", "Combien…"
+   - 40% COMPRÉHENSION/ANALYSE : "Comment fonctionne…", "Pourquoi…", "Quelle différence entre X et Y…"
+   - 30% APPLICATION : "Dans quel cas utiliserait-on…", "Lequel de ces scénarios illustre…", "Quel problème résout…"
+3. SUJETS DIFFÉRENTS : chaque question doit porter sur un concept/fait DISTINCT du texte. Aucune reformulation d'une question précédente.
+4. EXACTEMENT 4 options — aucun doublon. correctAnswer = index 0..3, DISTRIBUÉ uniformément sur toutes les questions (pas toujours 0 ou 1).
+5. Les 3 mauvaises options : plausibles, du même domaine, mais factuellement incorrectes. Évite les options absurdes ou hors sujet.
+6. INTERDIT dans les options : "Toutes les réponses", "Toutes les options", "Aucune des réponses", "Tous les protocoles", "Toutes les méthodes" — jamais d'option générique fourre-tout.
+7. Explication : justifie en 1-2 phrases précises sans dire "le texte dit" ou "d'après le cours".
+8. points = 10 (rappel de fait), 15 (compréhension), 20 (application/analyse).
+9. Français obligatoire.
 
-Réponds UNIQUEMENT avec un tableau JSON valide (pas de texte avant, pas de texte après) :
-[{{"text":"?","options":["A","B","C","D"],"correctAnswer":1,"explanation":"","points":10}}]"""
+EXEMPLES DE BONNES FORMULATIONS :
+- Rappel : "Quelle est la principale caractéristique d'un ransomware ?"
+- Analyse : "Pourquoi le ransomware chiffre-t-il les fichiers avant d'afficher la demande de rançon ?"
+- Application : "Un administrateur constate que des fichiers sont chiffrés et qu'une note de rançon est affichée. Quelle est la première action à entreprendre ?"
+
+Réponds UNIQUEMENT avec un tableau JSON valide :
+[{{"text":"Question autonome et précise ?","options":["Option A","Option B","Option C","Option D"],"correctAnswer":2,"explanation":"Parce que...","points":15}}]"""
+
+QUIZ_PROMPT_TOPIC_SINGLE = """\
+Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM à CHOIX UNIQUE sur le sujet : "{subject}" (cours : "{course}").
+
+RÈGLES ABSOLUES :
+1. DIVERSITÉ COGNITIVE — répartis les {count} questions :
+   - 30% RAPPEL : définitions, faits précis, chiffres clés de "{subject}"
+   - 40% COMPRÉHENSION : mécanismes, fonctionnement, différences, comparaisons
+   - 30% APPLICATION : scénarios réels, cas d'usage, résolution de problèmes
+2. SUJETS VARIÉS : chaque question porte sur un ASPECT DIFFÉRENT de "{subject}". Interdis les reformulations.
+3. INTERDIT absolu : questions méta ("que contient ce cours", "quels modules", "selon l'énoncé").
+4. INTERDIT : questions trop génériques ("Qu'est-ce que X ?"). Préfère "Comment X fonctionne-t-il ?", "Pourquoi utilise-t-on X plutôt que Y ?", "Dans quel cas X est-il préférable ?".
+5. EXACTEMENT 4 options. correctAnswer = index 0..3, bien distribué sur les {count} questions.
+6. Options incorrectes : plausibles, dans le même domaine, mais factuellement fausses.
+7. Explication : 1-2 phrases précises.
+8. points = 10 (fait simple), 15 (compréhension), 20 (analyse/application).
+9. Français obligatoire.
+
+Réponds UNIQUEMENT avec un tableau JSON valide :
+[{{"text":"Question précise sur {subject} ?","options":["Option A","Option B","Option C","Option D"],"correctAnswer":2,"explanation":"Parce que...","points":15}}]"""
+
+QUIZ_PROMPT_TOPIC_MIXED = """\
+Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM à CHOIX MULTIPLE sur le sujet : "{subject}" (cours : "{course}").
+
+FORMAT OBLIGATOIRE — chaque objet JSON DOIT avoir "correctAnswers" (tableau, PAS "correctAnswer") :
+[
+  {{
+    "text": "Quelles caractéristiques définissent {subject} ?",
+    "options": ["Option A","Option B","Option C","Option D","Option E"],
+    "correctAnswers": [0, 2],
+    "explanation": "A car... C car...",
+    "points": 15
+  }},
+  {{
+    "text": "Quels avantages offre {subject} par rapport à une approche classique ?",
+    "options": ["Option A","Option B","Option C","Option D"],
+    "correctAnswers": [1, 3],
+    "explanation": "B car... D car...",
+    "points": 15
+  }}
+]
+
+RÈGLES STRICTES :
+1. "correctAnswers" EST UN TABLEAU avec 2 ou 3 indices. JAMAIS "correctAnswer" (singulier). JAMAIS 1 seul indice.
+2. Entre 4 et 6 options. Exactement 2-3 correctes, le reste incorrectes mais plausibles.
+3. DIVERSITÉ : chaque question teste un ASPECT DIFFÉRENT de "{subject}" (mécanismes, cas d'usage, propriétés, comparaisons, impacts).
+4. INTERDIT : questions méta ("que contient ce cours"). Questions d'expertise réelle uniquement.
+5. INTERDIT dans les options : "Toutes les réponses", "Toutes les options", "Aucune des réponses" — jamais de fourre-tout.
+6. points = 15 (2 correctes) ou 20 (3 correctes).
+7. Français obligatoire.
+
+Réponds UNIQUEMENT avec le tableau JSON :
+[{{"text":"...","options":["A","B","C","D"],"correctAnswers":[0,2],"explanation":"...","points":15}}]"""
 
 QUIZ_PROMPT_MIXED = """\
-Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM variées (simple, analytique, application) basées sur le contenu ci-dessous.
+Tu es un expert pédagogique francophone. Génère exactement {count} questions QCM à CHOIX MULTIPLE basées sur le texte ci-dessous.
 
+=== TEXTE SOURCE ===
 {content}
+=== FIN DU TEXTE ===
 
-RÈGLES ABSOLUES — respecte-les strictement :
-1. Chaque question porte UNIQUEMENT sur le contenu fourni
-2. Varie les niveaux : mémorisation, compréhension, application
-3. EXACTEMENT 4 options (ni plus, ni moins) — pas de doublons dans les options
-4. correctAnswer = index 0, 1, 2 ou 3 — VARIE la position (pas toujours 0)
-5. Explication courte de la bonne réponse
-6. points = 10 (facile), 15 (moyen), 20 (difficile)
-7. Rédige en français
+FORMAT OBLIGATOIRE — TOUS les objets JSON DOIVENT avoir "correctAnswers" (tableau, JAMAIS "correctAnswer") :
+[
+  {{
+    "text": "Quels mécanismes caractérisent X ?",
+    "options": ["Option A","Option B","Option C","Option D","Option E"],
+    "correctAnswers": [0, 3],
+    "explanation": "A car... D car...",
+    "points": 15
+  }}
+]
 
-Réponds UNIQUEMENT avec un tableau JSON valide (pas de texte avant, pas de texte après) :
-[{{"text":"?","options":["A","B","C","D"],"correctAnswer":1,"explanation":"","points":15}}]"""
+RÈGLES STRICTES :
+1. "correctAnswers" EST UN TABLEAU avec 2 ou 3 indices. JAMAIS "correctAnswer" (singulier). JAMAIS 1 seul indice. JAMAIS tous les indices.
+2. Entre 4 et 6 options par question. Exactement 2-3 correctes, le reste incorrectes mais plausibles.
+3. FORMULATION AUTONOME : question compréhensible sans le texte. INTERDIT : "selon l'énoncé", "d'après le texte", "selon le passage".
+4. DIVERSITÉ COGNITIVE — répartis les {count} questions :
+   - Questions sur des faits précis du texte (propriétés, exemples, valeurs)
+   - Questions sur des mécanismes et fonctionnements
+   - Questions comparatives (différences, similitudes entre concepts du texte)
+5. Mauvaises options : plausibles du même domaine, mais factuellement incorrectes.
+6. INTERDIT dans les options : "Toutes les réponses", "Toutes les options", "Aucune des réponses" — jamais de fourre-tout.
+7. points = 15 (2 correctes) ou 20 (3 correctes).
+8. Français obligatoire.
+
+Réponds UNIQUEMENT avec le tableau JSON (pas de texte avant, pas après) :
+[{{"text":"...","options":["A","B","C","D"],"correctAnswers":[1,3],"explanation":"...","points":15}}]"""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -414,10 +491,15 @@ KEYWORD_MAP = {
     "kubernetes": "kubernetes", "k8s": "kubernetes", "helm": "kubernetes",
     "devops": "devops", "ci/cd": "devops", "jenkins": "devops", "gitlab": "devops", "pipeline": "devops",
     "sécurité": "sécurité", "security": "sécurité", "firewall": "sécurité", "injection": "sécurité", "xss": "sécurité",
+    "malware": "sécurité", "malwares": "sécurité", "virus": "sécurité", "ransomware": "sécurité",
+    "cheval de troie": "sécurité", "trojan": "sécurité", "botnet": "sécurité", "phishing": "sécurité",
+    "cryptographie": "sécurité", "chiffrement": "sécurité", "vulnérabilité": "sécurité",
     "sql": "database", "base de données": "database", "nosql": "database", "mongodb": "database", "postgresql": "database",
     "javascript": "javascript", "js": "javascript", "es6": "javascript", "node": "javascript",
     "git": "git",
     "réseau": "réseau", "network": "réseau", "tcp": "réseau", "http": "réseau", "dns": "réseau",
+    "protocole": "réseau", "routage": "réseau", "commutation": "réseau", "vlan": "réseau",
+    "adresse ip": "réseau", "sous-réseau": "réseau", "pare-feu": "sécurité",
 }
 
 
@@ -425,62 +507,408 @@ KEYWORD_MAP = {
 # Main generator class
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _extract_meta(topic: str, prefix: str) -> str:
+    """Extract a single metadata value from the topic string."""
+    for line in topic.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):].strip()
+    return ""
+
+
+# Common question-structure words that appear in almost every quiz question —
+# excluded from topic-similarity so they don't inflate Jaccard between different topics.
+_TOPIC_STOP = frozenset({
+    'quels', 'quelles', 'quelle', 'comment', 'pourquoi', 'lequel', 'laquelle',
+    'quel', 'types', 'type', 'avantages', 'avantage', 'mécanismes', 'mécanisme',
+    'éléments', 'élément', 'prendre', 'compte', 'recommandés', 'courants',
+    'objectif', 'principal', 'principales', 'utilisation', 'utiliser',
+    'permet', 'permettent', 'toutes', 'leurs', 'cette',
+})
+
+
+def _word_set(text: str) -> frozenset:
+    """Domain-significant words (len≥5) for topic-similarity dedup, with structural stop words removed."""
+    words = re.findall(r'[a-zA-Zàâçéèêëîïôûùüÿñæœ]{5,}', text.lower())
+    return frozenset(w for w in words if w not in _TOPIC_STOP)
+
+
+def _is_topic_dup(new_words: frozenset, seen_word_sets: list, threshold: float = 0.58) -> bool:
+    """True if Jaccard similarity of domain words exceeds threshold with any seen question."""
+    if not new_words:
+        return False
+    for existing in seen_word_sets:
+        if not existing:
+            continue
+        union = len(new_words | existing)
+        if union > 0 and len(new_words & existing) / union >= threshold:
+            return True
+    return False
+
+
 class QuizGenerator:
 
     def generate(self, topic: str, course_title: str = "", count: int = 10,
                  question_type: str = "single") -> List[Dict]:
-        count = min(count, 40)
+        count = min(count, 10)
+        is_mixed = question_type == "mixed"
 
-        # ── 1. Try Groq LLM (content-adaptive) ──────────────────────────────
+        content = self._extract_content_section(topic)
+        subject = _extract_meta(topic, "LEÇON:") or _extract_meta(topic, "MODULE:") or course_title
+
+        logger.info("Quiz gen: content_len=%d subject='%s' type=%s count=%d",
+                    len(content), subject, question_type, count)
+
         if _groq_key():
-            result = self._generate_with_groq(topic, course_title, count, question_type)
-            if result and len(result) >= max(1, count // 2):
-                return [{"sortOrder": i, **q} for i, q in enumerate(result[:count])]
+            if is_mixed:
+                return self._generate_mixed_batched(content, subject, course_title, count)
+            else:
+                return self._generate_single_batched(content, subject, course_title, count)
 
-        # ── 2. Keyword-based fallback (static banks) ─────────────────────────
+        # No LLM available — fall back to keyword bank
         return self._generate_from_banks(topic, course_title, count)
 
-    # ── Groq LLM ─────────────────────────────────────────────────────────────
+    def _generate_single_batched(self, content: str, subject: str,
+                                  course_title: str, count: int) -> List[Dict]:
+        """
+        Generate SINGLE questions in batches of 5, passing already-seen question texts
+        AND option fingerprints as exclusions so the model generates genuinely different
+        questions instead of paraphrasing the same concept multiple times.
+        """
+        BATCH = 5
+        all_questions: List[Dict] = []
+        seen_texts: set = set()
+        seen_opts: set = set()
+        seen_topic_words: list = []  # word sets for Jaccard topic-similarity dedup
+        max_batches = (count // BATCH) + 4
+        consecutive_failures = 0
+        zero_new_streak = 0
+        content_exhausted = False
 
-    def _generate_with_groq(self, topic: str, course_title: str, count: int,
-                             question_type: str = "single") -> Optional[List[Dict]]:
-        template = QUIZ_PROMPT_MIXED if question_type == "mixed" else QUIZ_PROMPT_SINGLE
-        prompt = template.format(count=count, content=topic[:6000])
-        api_key = _groq_key()
-        try:
-            with httpx.Client(timeout=60) as client:
-                resp = client.post(
+        for _ in range(max_batches):
+            if len(all_questions) >= count:
+                break
+            need = min(BATCH, count - len(all_questions))
+            exclusions = [q.get("text", "") for q in all_questions]
+
+            batch: Optional[List[Dict]] = None
+            if not content_exhausted and len(content) >= 200:
+                batch = self._generate_with_groq(content, course_title, need, "single",
+                                                  exclusions=exclusions)
+            if not batch and subject:
+                batch = self._generate_from_topic(subject, course_title, need, "single",
+                                                   exclusions=exclusions)
+
+            if not batch:
+                consecutive_failures += 1
+                zero_new_streak = 0
+                if consecutive_failures >= 3:
+                    break
+                continue
+
+            consecutive_failures = 0
+            prev_len = len(all_questions)
+            for q in batch:
+                txt = q.get("text", "")
+                opts_key = frozenset(str(o).lower().strip() for o in q.get("options", []))
+                new_words = _word_set(txt)
+                if (txt and txt not in seen_texts
+                        and opts_key not in seen_opts
+                        and not _is_topic_dup(new_words, seen_topic_words)):
+                    seen_texts.add(txt)
+                    seen_opts.add(opts_key)
+                    seen_topic_words.append(new_words)
+                    all_questions.append(q)
+            added = len(all_questions) - prev_len
+            logger.info("Single batch: +%d new questions (%d/%d total)",
+                        added, len(all_questions), count)
+            if added == 0:
+                zero_new_streak += 1
+                if zero_new_streak >= 2:
+                    if not content_exhausted:
+                        # PDF content exhausted — switch to topic-only for remaining slots
+                        content_exhausted = True
+                        zero_new_streak = 0
+                        logger.info("Single batching: PDF exhausted, switching to topic-only (%d/%d)",
+                                    len(all_questions), count)
+                    else:
+                        # Topic also exhausted — truly stop
+                        logger.info("Single batching: content+topic exhausted after %d questions",
+                                    len(all_questions))
+                        break
+            else:
+                zero_new_streak = 0
+
+        if all_questions:
+            return [{"sortOrder": i, **q} for i, q in enumerate(all_questions[:count])]
+
+        return self._generate_from_banks(f"{subject} {course_title}", course_title, count)
+
+    def _generate_mixed_batched(self, content: str, subject: str,
+                                 course_title: str, count: int) -> List[Dict]:
+        """
+        Generate MIXED questions in batches of 5.
+        Small batches keep llama-3.1-8b-instant consistent: it generates correctAnswers (array)
+        for all 5 questions instead of drifting back to correctAnswer (single) mid-output.
+        Passes already-seen question texts as exclusions so the model avoids duplicates.
+        Retries up to 3 consecutive failures before giving up.
+        """
+        BATCH = 5
+        all_questions: List[Dict] = []
+        seen_texts: set = set()
+        seen_opts: set = set()
+        seen_topic_words: list = []  # word sets for Jaccard topic-similarity dedup
+        max_batches = (count // BATCH) + 5
+        consecutive_failures = 0
+        zero_new_streak = 0
+        content_exhausted = False
+
+        for _ in range(max_batches):
+            if len(all_questions) >= count:
+                break
+            need = min(BATCH, count - len(all_questions))
+
+            exclusions = [q.get("text", "") for q in all_questions]
+
+            batch: Optional[List[Dict]] = None
+            if not content_exhausted and len(content) >= 200:
+                batch = self._generate_with_groq(content, course_title, need, "mixed",
+                                                  exclusions=exclusions)
+            if not batch and subject:
+                batch = self._generate_from_topic(subject, course_title, need, "mixed",
+                                                   exclusions=exclusions)
+
+            if not batch:
+                consecutive_failures += 1
+                zero_new_streak = 0
+                logger.warning("Mixed batch failure #%d (all questions had wrong format)",
+                               consecutive_failures)
+                if consecutive_failures >= 3:
+                    logger.warning("Mixed batching: 3 consecutive failures, stopping early")
+                    break
+                continue
+
+            consecutive_failures = 0
+            prev_len = len(all_questions)
+            for q in batch:
+                txt = q.get("text", "")
+                opts_key = frozenset(str(o).lower().strip() for o in q.get("options", []))
+                new_words = _word_set(txt)
+                if (txt and txt not in seen_texts
+                        and opts_key not in seen_opts
+                        and not _is_topic_dup(new_words, seen_topic_words)):
+                    seen_texts.add(txt)
+                    seen_opts.add(opts_key)
+                    seen_topic_words.append(new_words)
+                    all_questions.append(q)
+            added = len(all_questions) - prev_len
+            logger.info("Mixed batch: +%d new questions (%d/%d total)",
+                        added, len(all_questions), count)
+            if added == 0:
+                zero_new_streak += 1
+                if zero_new_streak >= 2:
+                    # PDF content exhausted for MIXED — stop here (topic fallback creates off-topic questions)
+                    logger.info("Mixed batching: PDF content exhausted after %d questions (stopping)",
+                                len(all_questions))
+                    break
+            else:
+                zero_new_streak = 0
+
+        if all_questions:
+            return [{"sortOrder": i, **q} for i, q in enumerate(all_questions[:count])]
+
+        return self._generate_from_banks(f"{subject} {course_title}", course_title, count)
+
+    @staticmethod
+    def _extract_content_section(topic: str) -> str:
+        """
+        Extract only prose content from the structured topic string.
+        Strips ALL structural headers (## Module:, ### Lesson:) and metadata labels.
+        """
+        STRUCTURAL_PREFIXES = ("##", "###", "#", "LEÇON:", "MODULE:", "COURS:",
+                               "CATÉGORIE:", "TAGS:", "DESCRIPTION:")
+
+        for marker in ("CONTENU EXTRAIT DU PDF:\n", "CONTENU DES LEÇONS:\n",
+                       "CONTENU DU COURS:\n", "CONTENU:\n"):
+            if marker in topic:
+                raw = topic.split(marker, 1)[1]
+                # Keep only prose lines — discard structural headers
+                lines = [
+                    l for l in raw.splitlines()
+                    if l.strip() and not any(l.lstrip().startswith(p) for p in STRUCTURAL_PREFIXES)
+                ]
+                return "\n".join(lines).strip()
+
+        # Fallback: filter all known metadata/structural prefixes
+        lines = [
+            l for l in topic.splitlines()
+            if l.strip() and not any(l.startswith(p) for p in STRUCTURAL_PREFIXES)
+        ]
+        return "\n".join(lines).strip()
+
+    def _generate_from_content(self, content: str, course_title: str, count: int) -> List[Dict]:
+        """
+        Build quiz questions directly from lesson text without Groq.
+        Extracts declarative sentences and turns them into fill-in questions.
+        """
+        import re as _re
+        sentences = [
+            s.strip() for s in _re.split(r'[.!?]\s+', content)
+            if 40 < len(s.strip()) < 350 and not s.strip().startswith(('#', '-', '*'))
+        ]
+        random.shuffle(sentences)
+
+        questions: List[Dict] = []
+        used: set = set()
+
+        for sent in sentences:
+            if len(questions) >= count:
+                break
+
+            # Skip sentences that are too vague
+            if not any(c.isupper() for c in sent) and len(sent.split()) < 8:
+                continue
+
+            # Find a key term in the sentence (first UPPER-CASE word or proper noun-ish token)
+            words = sent.split()
+            key_term = next(
+                (w.strip('.,;:()') for w in words[2:]
+                 if len(w) >= 4 and (w[0].isupper() or w.isupper())),
+                None
+            )
+            if not key_term or key_term in used:
+                continue
+            used.add(key_term)
+
+            # Build question by replacing the key term with a blank
+            question_text = sent.replace(key_term, "___", 1)
+            if "___" not in question_text:
+                continue
+
+            # Generate plausible distractors from other key terms found in the content
+            other_terms = list({
+                w.strip('.,;:()') for w in content.split()
+                if len(w) >= 4 and w[0].isupper() and w.strip('.,;:()') != key_term
+                and w.strip('.,;:()') not in used
+            })
+            random.shuffle(other_terms)
+            distractors = other_terms[:3]
+
+            if len(distractors) < 3:
+                # Pad with generic wrong answers
+                pads = ["Aucune des réponses", "Non applicable", "Valeur non définie"]
+                distractors += pads[:3 - len(distractors)]
+
+            options = distractors[:3] + [key_term]
+            random.shuffle(options)
+            correct_idx = options.index(key_term)
+
+            questions.append({
+                "text": f"Complétez : « {question_text} »",
+                "options": options,
+                "correctAnswer": correct_idx,
+                "explanation": f"La bonne réponse est **{key_term}**. Phrase originale : « {sent}. »",
+                "points": 10,
+            })
+
+        return questions
+
+    # ── Groq LLM caller ──────────────────────────────────────────────────────
+
+    def _call_llm(self, prompt: str, max_tokens: int, temperature: float,
+                  question_type: str) -> Optional[List[Dict]]:
+        """Call Groq API with automatic 429 back-off. Up to 3 attempts."""
+        key = _groq_key()
+        if not key:
+            logger.warning("No GROQ_API_KEY set")
+            return None
+
+        headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+        for attempt in range(3):
+            try:
+                resp = httpx.post(
                     GROQ_URL,
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
+                    headers=headers,
                     json={
                         "model": GROQ_MODEL,
                         "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.5,
-                        "max_tokens": 6000,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
                     },
+                    timeout=60,
                 )
-            if resp.status_code != 200:
-                logger.warning("Groq HTTP %s: %s", resp.status_code, resp.text[:300])
-                return None
 
-            raw = resp.json()["choices"][0]["message"]["content"]
-            logger.info("Groq raw response length: %d chars", len(raw))
+                if resp.status_code == 429:
+                    wait = 8.0
+                    try:
+                        msg = resp.json().get("error", {}).get("message", "")
+                        m = re.search(r'in (\d+\.?\d*)s', msg)
+                        if m:
+                            wait = float(m.group(1)) + 1.0
+                    except Exception:
+                        pass
+                    logger.warning("Groq 429 — sleeping %.1fs (attempt %d)", wait, attempt + 1)
+                    time.sleep(wait)
+                    continue
 
-            questions = self._parse_questions_json(raw)
-            if questions is None:
-                logger.warning("All JSON parse strategies failed")
-                return None
+                if resp.status_code != 200:
+                    logger.warning("Groq HTTP %s: %s", resp.status_code, resp.text[:200])
+                    return None
 
-            valid = self._validate_questions(questions)
-            logger.info("Groq: %d valid questions parsed", len(valid))
-            return valid if valid else None
+                raw = resp.json()["choices"][0]["message"]["content"]
+                logger.info("Groq response: %d chars", len(raw))
+                questions = self._parse_questions_json(raw)
+                if questions is None:
+                    logger.warning("JSON parse failed for Groq response")
+                    return None
+                valid = self._validate_questions(questions, question_type)
+                logger.info("Groq: %d valid questions parsed", len(valid))
+                return valid if valid else None
 
-        except Exception as e:
-            logger.error("Groq generation failed: %s", e, exc_info=True)
-            return None
+            except httpx.TimeoutException:
+                logger.warning("Groq timeout on attempt %d", attempt + 1)
+                if attempt == 2:
+                    return None
+                time.sleep(2)
+            except Exception as e:
+                logger.warning("Groq attempt %d failed: %s", attempt + 1, e)
+                if attempt == 2:
+                    return None
+                time.sleep(2)
+
+        return None
+
+    def _generate_with_groq(self, content: str, course_title: str, count: int,
+                             question_type: str = "single",
+                             exclusions: Optional[List[str]] = None) -> Optional[List[Dict]]:
+        """Generate questions from PDF content using the best available LLM."""
+        is_mixed = question_type == "mixed"
+        template = QUIZ_PROMPT_MIXED if is_mixed else QUIZ_PROMPT_SINGLE
+        max_tokens = min(count * 220 + 500, 7000) if is_mixed else min(count * 130 + 300, 4000)
+        temperature = 0.15 if is_mixed else 0.4
+        llm_content = (f"Cours : {course_title}\n\n{content[:8000]}"
+                       if course_title else content[:9000])
+        prompt = template.format(count=count, content=llm_content)
+        if exclusions:
+            excl_lines = "\n".join(f"- {t[:70]}" for t in exclusions[:15])
+            prompt += f"\n\nSUJETS DÉJÀ COUVERTS — génère des questions sur d'AUTRES aspects :\n{excl_lines}"
+        return self._call_llm(prompt, max_tokens, temperature, question_type)
+
+    def _generate_from_topic(self, subject: str, course_title: str, count: int,
+                              question_type: str = "single",
+                              exclusions: Optional[List[str]] = None) -> Optional[List[Dict]]:
+        """Generate questions from subject title when no PDF content is available."""
+        is_mixed = question_type == "mixed"
+        template = QUIZ_PROMPT_TOPIC_MIXED if is_mixed else QUIZ_PROMPT_TOPIC_SINGLE
+        max_tokens = min(count * 220 + 400, 6000) if is_mixed else min(count * 130 + 300, 3500)
+        prompt = template.format(count=count, subject=subject, course=course_title or subject)
+        if exclusions:
+            excl_lines = "\n".join(f"- {t[:70]}" for t in exclusions[:15])
+            prompt += f"\n\nSUJETS DÉJÀ COUVERTS — génère des questions sur d'AUTRES aspects de {subject} :\n{excl_lines}"
+        valid = self._call_llm(prompt, max_tokens, 0.15 if is_mixed else 0.5, question_type)
+        if valid:
+            logger.info("Topic '%s': %d valid questions (%s)", subject, len(valid), question_type)
+        return valid
 
     def _parse_questions_json(self, raw: str) -> Optional[List]:
         """Try multiple strategies to extract a JSON array from a (possibly malformed) LLM response."""
@@ -558,41 +986,80 @@ class QuizGenerator:
                     start = -1
         return results if results else None
 
-    def _validate_questions(self, questions: List) -> List[Dict]:
-        """Filter and normalise raw question dicts."""
+    def _validate_questions(self, questions: List, question_type: str = "single") -> List[Dict]:
+        """Filter and normalise raw question dicts. Supports single and multi-correct (mixed) formats."""
+        is_mixed = question_type == "mixed"
         valid: List[Dict] = []
         for q in questions:
             if not isinstance(q, dict):
                 continue
-            if not all(k in q for k in ("text", "options", "correctAnswer")):
+            if "text" not in q or "options" not in q:
                 continue
+
+            has_multi = isinstance(q.get("correctAnswers"), list) and len(q.get("correctAnswers", [])) >= 2
+            has_single = "correctAnswer" in q
+
+            # MIXED requires a proper correctAnswers array — single-only questions are rejected
+            if is_mixed and not has_multi:
+                continue
+            if not is_mixed and not has_single:
+                continue
+
             opts = q.get("options", [])
             if not isinstance(opts, list) or len(opts) < 2:
                 continue
             seen_opts: set = set()
             clean_opts: List[str] = []
+            max_opts = 6 if is_mixed else 4
+            _GENERIC_OPT = re.compile(
+                r'toutes?\s+les\s+(options?|r[eé]ponses?|m[eé]thodes?|protocoles?|mesures?)'
+                r'|aucune\s+des\s+r[eé]ponses?'
+                r'|none\s+of\s+the',
+                re.IGNORECASE,
+            )
             for o in opts:
                 o_str = str(o).strip()
-                if o_str and o_str not in seen_opts:
+                if o_str and o_str not in seen_opts and not _GENERIC_OPT.search(o_str):
                     seen_opts.add(o_str)
                     clean_opts.append(o_str)
-                if len(clean_opts) == 6:
+                if len(clean_opts) == max_opts:
                     break
             if len(clean_opts) < 2:
                 continue
+
+            # Single correctAnswer (used for SINGLE or as fallback)
             ca = q.get("correctAnswer", 0)
             try:
                 ca = int(ca)
             except (ValueError, TypeError):
                 ca = 0
             ca = max(0, min(ca, len(clean_opts) - 1))
-            valid.append({
+
+            entry: Dict = {
                 "text": str(q["text"]).strip(),
                 "options": clean_opts,
                 "correctAnswer": ca,
                 "explanation": str(q.get("explanation", "")).strip(),
                 "points": int(q.get("points", 10)),
-            })
+            }
+
+            # Multi-correct answers for MIXED questions
+            if is_mixed and has_multi:
+                raw_multi = q["correctAnswers"]
+                clean_multi: List[int] = []
+                for v in raw_multi:
+                    try:
+                        idx = int(v)
+                        if 0 <= idx < len(clean_opts) and idx not in clean_multi:
+                            clean_multi.append(idx)
+                    except (ValueError, TypeError):
+                        pass
+                if len(clean_multi) >= 2:
+                    entry["correctAnswers"] = clean_multi
+                    entry["correctAnswer"] = clean_multi[0]
+                    entry["points"] = 20 if len(clean_multi) >= 3 else 15
+
+            valid.append(entry)
         return valid
 
     # ── Static keyword-based fallback ────────────────────────────────────────
@@ -641,9 +1108,59 @@ class QuizGenerator:
         return [{"sortOrder": i, **q} for i, q in enumerate(unique[:count])]
 
     def generate_summary(self, topic: str, level: str = "Intermédiaire") -> str:
-        intros = {
-            "Débutant": f"Ce cours introduit les fondamentaux de **{topic}** sans prérequis. Vous apprendrez les concepts essentiels avec des exemples concrets.",
-            "Intermédiaire": f"Ce cours approfondit **{topic}**. Il suppose une connaissance de base et guide vers la maîtrise des concepts avancés.",
-            "Avancé": f"Ce cours expert couvre les aspects avancés de **{topic}**. Conçu pour les praticiens souhaitant maîtriser les subtilités du domaine.",
+        _level_map = {
+            "BEGINNER": "Débutant", "beginner": "Débutant",
+            "INTERMEDIATE": "Intermédiaire", "intermediate": "Intermédiaire",
+            "ADVANCED": "Avancé", "advanced": "Avancé",
         }
-        return intros.get(level, intros["Intermédiaire"])
+        clean_level = _level_map.get(level, level)
+
+        key = _groq_key()
+        if key:
+            prompt = (
+                f"Tu es un expert pédagogique. Rédige une description de cours professionnelle et engageante en français.\n\n"
+                f"Cours : {topic}\nNiveau : {clean_level}\n\n"
+                f"Exigences :\n"
+                f"- 3 à 5 phrases percutantes, texte fluide (pas de listes ou de puces)\n"
+                f"- Commence par une accroche sur ce que l'apprenant va maîtriser\n"
+                f"- Mentionne les compétences acquises, les prérequis adaptés au niveau et l'application pratique\n"
+                f"- Ton professionnel mais accessible\n\n"
+                f"Réponds UNIQUEMENT avec la description (sans titre ni préambule)."
+            )
+            try:
+                resp = httpx.post(
+                    GROQ_URL,
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={"model": GROQ_MODEL, "messages": [{"role": "user", "content": prompt}],
+                          "max_tokens": 280, "temperature": 0.65},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    content = resp.json()["choices"][0]["message"]["content"].strip()
+                    if content:
+                        return content
+                else:
+                    logger.warning("Groq summary HTTP %s", resp.status_code)
+            except Exception as e:
+                logger.warning("Groq summary generation failed: %s", e)
+
+        intros = {
+            "Débutant": (
+                f"Découvrez les fondamentaux de {topic} à travers une approche progressive et accessible. "
+                f"Ce cours vous guidera pas à pas depuis les bases essentielles jusqu'aux premiers projets pratiques, "
+                f"sans prérequis nécessaire. À la fin de ce parcours, vous disposerez des outils concrets pour démarrer "
+                f"votre pratique en toute confiance."
+            ),
+            "Intermédiaire": (
+                f"Approfondissez vos connaissances en {topic} et franchissez un cap décisif dans votre maîtrise du sujet. "
+                f"Ce cours suppose des bases solides et vous guide vers les concepts avancés à travers des exercices "
+                f"pratiques et des études de cas réels. Vous en ressortirez capable d'aborder des projets de plus grande envergure."
+            ),
+            "Avancé": (
+                f"Maîtrisez les aspects les plus sophistiqués de {topic} dans ce cours expert. "
+                f"Conçu pour des praticiens expérimentés, il explore les subtilités techniques, les architectures complexes "
+                f"et les meilleures pratiques du secteur. Vous développerez une expertise pointue directement applicable "
+                f"sur des projets professionnels ambitieux."
+            ),
+        }
+        return intros.get(clean_level, intros["Intermédiaire"])

@@ -15,8 +15,9 @@ public class RestClientConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
-                .setConnectTimeout(Duration.ofSeconds(3))
-                .setReadTimeout(Duration.ofSeconds(10))
+                .setConnectTimeout(Duration.ofSeconds(5))
+                // AI quiz generation: 40 questions MIXED can take up to 12 min (Groq rate limit waits)
+                .setReadTimeout(Duration.ofMinutes(15))
                 .build();
     }
 

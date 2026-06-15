@@ -18,14 +18,14 @@ interface Enrollment {
   standalone: true,
   imports: [CommonModule, RouterLink, Sidebar],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
       <main class="flex-1 overflow-y-auto">
 
         <div class="page-hero">
           <div>
-            <h1 class="font-display text-2xl font-bold" style="color:#221f2c">Mes certificats</h1>
-            <p class="text-sm mt-0.5" style="color:#948da3">{{ certificates().length }} cours complété{{ certificates().length !== 1 ? 's' : '' }}</p>
+            <h1 class="font-display text-2xl font-bold" style="color:#1a2d3a">Mes certificats</h1>
+            <p class="text-sm mt-0.5" style="color:#5a7a8a">{{ certificates().length }} cours complété{{ certificates().length !== 1 ? 's' : '' }}</p>
           </div>
           <div class="stat-pill" *ngIf="certificates().length > 0">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -88,8 +88,8 @@ interface Enrollment {
                 <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
               </svg>
             </div>
-            <p class="font-bold text-lg font-display" style="color:#221f2c">Aucun certificat pour le moment</p>
-            <p class="text-sm mt-1" style="color:#948da3">Terminez un cours et réclamez votre badge pour obtenir votre certificat</p>
+            <p class="font-bold text-lg font-display" style="color:#1a2d3a">Aucun certificat pour le moment</p>
+            <p class="text-sm mt-1" style="color:#5a7a8a">Terminez un cours et réclamez votre badge pour obtenir votre certificat</p>
             <a routerLink="/student/evaluations" class="btn-primary mt-5">Voir mes badges</a>
           </div>
         </div>
@@ -97,28 +97,28 @@ interface Enrollment {
     </div>
   `,
   styles: [`
-    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(167,139,250,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
+    .page-hero { display:flex; align-items:center; justify-content:space-between; padding:28px 32px 20px; border-bottom:1px solid rgba(0,180,198,.1); gap:16px; flex-wrap:wrap; background:rgba(255,253,251,.7); }
     .page-body { padding:24px 32px; }
     .stat-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; background:rgba(255,255,255,.8); border:1px solid rgba(245,165,36,.2); box-shadow:0 2px 8px rgba(245,165,36,.1); }
-    .stat-num { font-size:15px; font-weight:800; color:#221f2c; font-family:'Fraunces',Georgia,serif; line-height:1; }
-    .stat-lbl { font-size:11px; color:#948da3; font-weight:500; }
+    .stat-num { font-size:15px; font-weight:800; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; line-height:1; }
+    .stat-lbl { font-size:11px; color:#5a7a8a; font-weight:500; }
 
     /* Certificate card */
     .cert-card { background:rgba(255,255,255,.9); border:1px solid rgba(245,165,36,.22); border-radius:24px; padding:22px; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:14px; transition:box-shadow .22s, transform .22s; box-shadow:0 2px 14px rgba(245,165,36,.08); }
     .cert-card:hover { box-shadow:0 8px 32px rgba(245,165,36,.18); transform:translateY(-2px); }
     .cert-bg-deco { position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle,rgba(245,165,36,.12),transparent 70%); pointer-events:none; }
     .cert-top { display:flex; align-items:flex-start; gap:14px; }
-    .cert-badge-icon { width:52px; height:52px; border-radius:18px; background:linear-gradient(135deg,#f5a524,#fb7299); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 8px 22px rgba(245,165,36,.35); }
-    .cert-title { font-size:15px; font-weight:700; color:#221f2c; font-family:'Fraunces',Georgia,serif; line-height:1.35; }
-    .cert-meta { font-size:11px; color:#948da3; margin-top:2px; }
+    .cert-badge-icon { width:52px; height:52px; border-radius:18px; background:linear-gradient(135deg,#f5a524,#00A8BC); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 8px 22px rgba(245,165,36,.35); }
+    .cert-title { font-size:15px; font-weight:700; color:#1a2d3a; font-family:'Fraunces',Georgia,serif; line-height:1.35; }
+    .cert-meta { font-size:11px; color:#5a7a8a; margin-top:2px; }
     .badge-star { width:32px; height:32px; border-radius:10px; background:rgba(245,165,36,.1); border:1px solid rgba(245,165,36,.25); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .cert-date { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#1f9d6f; padding:6px 12px; border-radius:10px; background:rgba(31,157,111,.07); border:1px solid rgba(31,157,111,.18); align-self:flex-start; }
     .cert-download { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px; border-radius:14px; background:rgba(245,165,36,.1); border:1px solid rgba(245,165,36,.25); color:#d97706; font-size:13px; font-weight:700; cursor:pointer; transition:all .22s; font-family:inherit; margin-top:auto; }
     .cert-download:hover { background:rgba(245,165,36,.2); transform:translateY(-1px); box-shadow:0 6px 18px rgba(245,165,36,.2); }
 
     .empty-state { display:flex; flex-direction:column; align-items:center; gap:6px; padding:80px 20px; text-align:center; }
-    .empty-icon { width:72px; height:72px; border-radius:24px; background:rgba(167,139,250,.07); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
-    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:11px 22px; border-radius:14px; background:linear-gradient(135deg,#a78bfa,#fb7299); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(167,139,250,.3); text-decoration:none; }
+    .empty-icon { width:72px; height:72px; border-radius:24px; background:rgba(0,180,198,.07); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:11px 22px; border-radius:14px; background:linear-gradient(135deg,#00B4C6,#00A8BC); border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(0,180,198,.3); text-decoration:none; }
     .btn-primary:hover { transform:translateY(-1px); }
     .skeleton { background:linear-gradient(90deg,rgba(245,165,36,.07) 25%,rgba(245,165,36,.14) 50%,rgba(245,165,36,.07) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
     @keyframes shimmer { to { background-position:-200% 0; } }
@@ -181,7 +181,7 @@ export class StudentCertificates implements OnInit {
 
   /* Decorative border */
   .border-outer { position:absolute; inset:8mm; border:2.5px solid rgba(245,165,36,.35); border-radius:10mm; pointer-events:none; }
-  .border-inner  { position:absolute; inset:11mm; border:1px solid rgba(167,139,250,.22); border-radius:8mm; pointer-events:none; }
+  .border-inner  { position:absolute; inset:11mm; border:1px solid rgba(0,180,198,.22); border-radius:8mm; pointer-events:none; }
 
   /* Corner ornaments */
   .corner { position:absolute; width:14mm; height:14mm; }
@@ -192,22 +192,22 @@ export class StudentCertificates implements OnInit {
 
   /* BG gradient blobs */
   .blob1 { position:absolute; top:-20mm; right:-20mm; width:80mm; height:80mm; background:radial-gradient(circle,rgba(245,165,36,.12),transparent 70%); border-radius:50%; }
-  .blob2 { position:absolute; bottom:-20mm; left:-20mm; width:80mm; height:80mm; background:radial-gradient(circle,rgba(167,139,250,.1),transparent 70%); border-radius:50%; }
+  .blob2 { position:absolute; bottom:-20mm; left:-20mm; width:80mm; height:80mm; background:radial-gradient(circle,rgba(0,180,198,.1),transparent 70%); border-radius:50%; }
 
-  .logo { font-family:'Fraunces',Georgia,serif; font-size:13pt; font-weight:700; color:#a78bfa; letter-spacing:.08em; margin-bottom:6mm; }
-  .divider { width:20mm; height:2px; background:linear-gradient(90deg,#f5a524,#fb7299); border-radius:2px; margin:4mm 0; }
-  .headline { font-family:'Fraunces',Georgia,serif; font-size:10pt; color:#948da3; letter-spacing:.15em; text-transform:uppercase; }
-  .student-name { font-family:'Fraunces',Georgia,serif; font-size:32pt; font-weight:700; color:#221f2c; margin:4mm 0 3mm; line-height:1.1; text-align:center; }
-  .sub { font-size:10pt; color:#948da3; margin-bottom:5mm; }
-  .course-name { font-family:'Fraunces',Georgia,serif; font-size:18pt; font-weight:700; color:#7c5ce0; text-align:center; max-width:180mm; line-height:1.3; margin-bottom:3mm; }
-  .course-meta { font-size:9pt; color:#948da3; margin-bottom:7mm; }
+  .logo { font-family:'Fraunces',Georgia,serif; font-size:13pt; font-weight:700; color:#00B4C6; letter-spacing:.08em; margin-bottom:6mm; }
+  .divider { width:20mm; height:2px; background:linear-gradient(90deg,#f5a524,#00A8BC); border-radius:2px; margin:4mm 0; }
+  .headline { font-family:'Fraunces',Georgia,serif; font-size:10pt; color:#5a7a8a; letter-spacing:.15em; text-transform:uppercase; }
+  .student-name { font-family:'Fraunces',Georgia,serif; font-size:32pt; font-weight:700; color:#1a2d3a; margin:4mm 0 3mm; line-height:1.1; text-align:center; }
+  .sub { font-size:10pt; color:#5a7a8a; margin-bottom:5mm; }
+  .course-name { font-family:'Fraunces',Georgia,serif; font-size:18pt; font-weight:700; color:#007A8A; text-align:center; max-width:180mm; line-height:1.3; margin-bottom:3mm; }
+  .course-meta { font-size:9pt; color:#5a7a8a; margin-bottom:7mm; }
   .score-badge { display:inline-flex; align-items:center; gap:2mm; background:rgba(245,165,36,.12); border:1px solid rgba(245,165,36,.3); border-radius:8mm; padding:2mm 5mm; font-size:10pt; font-weight:700; color:#d97706; margin-bottom:8mm; }
-  .footer { display:flex; align-items:flex-end; justify-content:space-between; width:100%; margin-top:auto; padding-top:4mm; border-top:1px solid rgba(167,139,250,.15); }
+  .footer { display:flex; align-items:flex-end; justify-content:space-between; width:100%; margin-top:auto; padding-top:4mm; border-top:1px solid rgba(0,180,198,.15); }
   .sig-block { display:flex; flex-direction:column; align-items:center; gap:1mm; }
-  .sig-line { width:35mm; height:1px; background:#221f2c; margin-bottom:1mm; }
-  .sig-name { font-size:9pt; font-weight:700; color:#221f2c; }
-  .sig-role { font-size:8pt; color:#948da3; }
-  .cert-date { font-size:9pt; color:#948da3; text-align:right; }
+  .sig-line { width:35mm; height:1px; background:#1a2d3a; margin-bottom:1mm; }
+  .sig-name { font-size:9pt; font-weight:700; color:#1a2d3a; }
+  .sig-role { font-size:8pt; color:#5a7a8a; }
+  .cert-date { font-size:9pt; color:#5a7a8a; text-align:right; }
   .cert-id { font-size:7pt; color:#c4bdd6; }
   @media print {
     html, body { width:297mm; height:210mm; }
@@ -247,7 +247,7 @@ export class StudentCertificates implements OnInit {
       <div class="sig-role">Plateforme de formation</div>
     </div>
     <div class="cert-date">
-      <div style="font-weight:600;color:#221f2c">Délivré le ${this.escHtml(date)}</div>
+      <div style="font-weight:600;color:#1a2d3a">Délivré le ${this.escHtml(date)}</div>
       <div class="cert-id">ID: ${e.id.substring(0,8).toUpperCase()}</div>
     </div>
   </div>

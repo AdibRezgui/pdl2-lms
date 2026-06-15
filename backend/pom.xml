@@ -103,6 +103,13 @@
             <version>1.3.43</version>
         </dependency>
 
+        <!-- ── PDF Text Extraction (Apache PDFBox) ───────────────────────── -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
         <!-- ── Rate Limiting ─────────────────────────────────────────────── -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>

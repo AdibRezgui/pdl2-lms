@@ -22,7 +22,7 @@ public class FileStorageService {
         "application/pdf", "video/mp4", "video/webm"
     );
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;  // 5 MB
-    private static final long MAX_DOC_SIZE   = 50 * 1024 * 1024; // 50 MB
+    private static final long MAX_DOC_SIZE   = 200 * 1024 * 1024; // 200 MB
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;

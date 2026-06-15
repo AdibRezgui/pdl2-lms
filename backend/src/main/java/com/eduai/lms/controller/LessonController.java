@@ -2,6 +2,7 @@ package com.eduai.lms.controller;
 
 import com.eduai.lms.dto.request.LessonRequest;
 import com.eduai.lms.dto.response.ApiResponse;
+import com.eduai.lms.dto.response.LessonResponse;
 import com.eduai.lms.model.Lesson;
 import com.eduai.lms.model.LessonCompletion;
 import com.eduai.lms.model.User;
@@ -32,26 +33,28 @@ public class LessonController {
     private final LessonCompletionRepository lessonCompletionRepository;
 
     @GetMapping("/modules/{moduleId}/lessons")
-    public ResponseEntity<ApiResponse<List<Lesson>>> getByModule(@PathVariable UUID moduleId) {
-        return ResponseEntity.ok(ApiResponse.ok(lessonService.getLessonsByModule(moduleId)));
+    public ResponseEntity<ApiResponse<List<LessonResponse>>> getByModule(@PathVariable UUID moduleId) {
+        List<LessonResponse> list = lessonService.getLessonsByModule(moduleId)
+                .stream().map(LessonResponse::from).toList();
+        return ResponseEntity.ok(ApiResponse.ok(list));
     }
 
     @PostMapping("/modules/{moduleId}/lessons")
-    public ResponseEntity<ApiResponse<Lesson>> create(
+    public ResponseEntity<ApiResponse<LessonResponse>> create(
             @PathVariable UUID moduleId,
             @Valid @RequestBody LessonRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.ok("Leçon créée",
-            lessonService.createLesson(moduleId, request, user)));
+            LessonResponse.from(lessonService.createLesson(moduleId, request, user))));
     }
 
     @PutMapping("/lessons/{id}")
-    public ResponseEntity<ApiResponse<Lesson>> update(
+    public ResponseEntity<ApiResponse<LessonResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody LessonRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.ok("Leçon mise à jour",
-            lessonService.updateLesson(id, request, user)));
+            LessonResponse.from(lessonService.updateLesson(id, request, user))));
     }
 
     @DeleteMapping("/lessons/{id}")

@@ -13,13 +13,13 @@ interface User { id: string; name: string; email: string; role: string; enabled:
   standalone: true,
   imports: [CommonModule, FormsModule, Sidebar],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
       <main class="flex-1 overflow-y-auto p-7">
         <div class="mb-6 flex items-center justify-between reveal">
           <div>
-            <h1 class="font-display text-2xl font-bold" style="color:#221f2c">Gestion des utilisateurs</h1>
-            <p class="text-sm mt-0.5" style="color:#948da3">{{ users().length }} utilisateur(s)</p>
+            <h1 class="font-display text-2xl font-bold" style="color:#1a2d3a">Gestion des utilisateurs</h1>
+            <p class="text-sm mt-0.5" style="color:#5a7a8a">{{ users().length }} utilisateur(s)</p>
           </div>
           <div class="flex gap-3">
             <input [(ngModel)]="search" placeholder="Rechercher..." class="input-field w-48 text-sm" />
@@ -53,10 +53,10 @@ interface User { id: string; name: string; email: string; role: string; enabled:
                 <td class="p-4">
                   <div class="flex items-center gap-2.5">
                     <div class="avatar-chip" [style.background]="roleGradient(u.role)">{{ u.name[0] }}</div>
-                    <span class="text-sm font-semibold" style="color:#221f2c">{{ u.name }}</span>
+                    <span class="text-sm font-semibold" style="color:#1a2d3a">{{ u.name }}</span>
                   </div>
                 </td>
-                <td class="p-4 text-xs" style="color:#948da3">{{ u.email }}</td>
+                <td class="p-4 text-xs" style="color:#5a7a8a">{{ u.email }}</td>
                 <td class="p-4">
                   <span class="role-pill" [style.background]="roleBg(u.role)" [style.color]="roleText(u.role)">{{ u.role }}</span>
                 </td>
@@ -65,7 +65,7 @@ interface User { id: string; name: string; email: string; role: string; enabled:
                     {{ u.enabled ? 'Actif' : 'Inactif' }}
                   </span>
                 </td>
-                <td class="p-4 text-xs" style="color:#948da3">{{ u.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td class="p-4 text-xs" style="color:#5a7a8a">{{ u.createdAt | date:'dd/MM/yyyy' }}</td>
                 <td class="p-4">
                   <div class="flex gap-2">
                     <button (click)="toggleStatus(u)" class="action-btn" [style.background]="u.enabled ? 'rgba(242,92,120,.1)' : 'rgba(110,231,183,.14)'" [style.color]="u.enabled ? '#f25c78' : '#1f9d6f'">
@@ -78,7 +78,7 @@ interface User { id: string; name: string; email: string; role: string; enabled:
                 </td>
               </tr>
               <tr *ngIf="filtered().length === 0">
-                <td colspan="6" class="p-8 text-center text-sm" style="color:#948da3">Aucun utilisateur trouvé</td>
+                <td colspan="6" class="p-8 text-center text-sm" style="color:#5a7a8a">Aucun utilisateur trouvé</td>
               </tr>
             </tbody>
           </table>
@@ -91,7 +91,7 @@ interface User { id: string; name: string; email: string; role: string; enabled:
     .role-pill { font-size:11px; padding:3px 11px; border-radius:999px; font-weight:600; }
     .action-btn { padding:6px 11px; border-radius:10px; font-size:12px; font-weight:600; border:none; cursor:pointer; transition:all .2s; }
     .action-btn:hover { filter:brightness(.94); }
-    .del-icon-btn { width:30px; height:30px; border-radius:10px; background:rgba(167,139,250,.08); border:none; color:#948da3; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .del-icon-btn { width:30px; height:30px; border-radius:10px; background:rgba(0,180,198,.08); border:none; color:#5a7a8a; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
     .del-icon-btn:hover { background:rgba(242,92,120,.14); color:#f25c78; }
   `],
 })
@@ -111,9 +111,9 @@ export class AdminUsers implements OnInit {
   get role() { return this.auth.user()?.role ?? 'ADMIN'; }
   get userName() { return this.auth.user()?.name ?? ''; }
 
-  roleGradient(r: string) { return { ADMIN: 'linear-gradient(135deg,#f5a524,#e2940f)', TRAINER: 'linear-gradient(135deg,#fb7299,#f25c78)', STUDENT: 'linear-gradient(135deg,#a78bfa,#8b6ef2)' }[r] ?? 'rgba(167,139,250,.4)'; }
-  roleBg(r: string) { return { ADMIN: 'rgba(245,165,36,.14)', TRAINER: 'rgba(251,114,153,.14)', STUDENT: 'rgba(167,139,250,.14)' }[r] ?? 'rgba(167,139,250,.1)'; }
-  roleText(r: string) { return { ADMIN: '#e2940f', TRAINER: '#e85586', STUDENT: '#7c5ce0' }[r] ?? '#7c5ce0'; }
+  roleGradient(r: string) { return { ADMIN: 'linear-gradient(135deg,#f5a524,#e2940f)', TRAINER: 'linear-gradient(135deg,#00A8BC,#f25c78)', STUDENT: 'linear-gradient(135deg,#00B4C6,#0099AE)' }[r] ?? 'rgba(0,180,198,.4)'; }
+  roleBg(r: string) { return { ADMIN: 'rgba(245,165,36,.14)', TRAINER: 'rgba(0,168,188,.14)', STUDENT: 'rgba(0,180,198,.14)' }[r] ?? 'rgba(0,180,198,.1)'; }
+  roleText(r: string) { return { ADMIN: '#e2940f', TRAINER: '#e85586', STUDENT: '#007A8A' }[r] ?? '#007A8A'; }
 
   constructor(private auth: AuthService, private api: ApiService, private toast: ToastService) {}
 

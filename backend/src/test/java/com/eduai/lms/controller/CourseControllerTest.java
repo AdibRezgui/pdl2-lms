@@ -46,6 +46,8 @@ class CourseControllerTest {
     @MockBean com.eduai.lms.repository.UserRepository userRepository;
     // Required so SecurityConfig can be constructed and our custom chain activates
     @MockBean UserDetailsService userDetailsService;
+    // Required by SecurityMonitoringFilter, SecurityEventEntryPoint, JwtAuthFilter (all loaded by @WebMvcTest)
+    @MockBean com.eduai.lms.service.SecurityEventService securityEventService;
 
     private CourseResponse sampleResponse;
 

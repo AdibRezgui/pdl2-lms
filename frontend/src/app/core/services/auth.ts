@@ -51,11 +51,16 @@ export class AuthService {
   }
 
   logout() {
+    this.clearSession();
+    this.router.navigate(['/login']);
+  }
+
+  clearSession() {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);
     localStorage.removeItem(this.USER_KEY);
-    this._token.set(null); this._user.set(null);
-    this.router.navigate(['/login']);
+    this._token.set(null);
+    this._user.set(null);
   }
 
   updateLocalUser(patch: Partial<User>) {

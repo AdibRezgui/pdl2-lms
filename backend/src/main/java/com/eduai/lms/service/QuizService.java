@@ -23,6 +23,7 @@ public class QuizService {
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final com.eduai.lms.repository.ModuleRepository moduleRepository;
     private final ObjectMapper objectMapper;
 
@@ -66,7 +67,32 @@ public class QuizService {
                 .completedAt(LocalDateTime.now())
                 .build();
 
-        return quizAttemptRepository.save(attempt);
+        QuizAttempt saved = quizAttemptRepository.save(attempt);
+        if (passed) autoClaimBadgeIfEligible(student, quiz.getCourse());
+        return saved;
+    }
+
+    private void autoClaimBadgeIfEligible(User student, Course course) {
+        enrollmentRepository.findByUserAndCourse(student, course).ifPresent(enrollment -> {
+            if (enrollment.isBadgeEarned()) return;
+            List<Quiz> quizzes = quizRepository.findByCourse(course);
+            if (quizzes.isEmpty()) return;
+            boolean allModulesPassed = quizzes.stream()
+                .filter(q -> q.getModule() != null)
+                .allMatch(q -> quizAttemptRepository.findByUserAndQuiz(student, q)
+                    .stream().anyMatch(a -> a.isPassed() && a.getScore() >= 70));
+            boolean finalPassed = quizzes.stream()
+                .filter(q -> q.getModule() == null)
+                .anyMatch(q -> quizAttemptRepository.findByUserAndQuiz(student, q)
+                    .stream().anyMatch(a -> a.isPassed() && a.getScore() >= 70));
+            if (allModulesPassed && finalPassed) {
+                enrollment.setBadgeEarned(true);
+                enrollment.setCompleted(true);
+                enrollment.setProgress(100);
+                if (enrollment.getCompletedAt() == null) enrollment.setCompletedAt(LocalDateTime.now());
+                enrollmentRepository.save(enrollment);
+            }
+        });
     }
 
     public List<QuizAttempt> getMyAttempts(User student) {

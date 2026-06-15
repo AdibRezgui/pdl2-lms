@@ -59,10 +59,15 @@ export const routes: Routes = [
       { path: 'dashboard', loadComponent: () => import('./pages/admin/dashboard/dashboard').then(m => m.AdminDashboard) },
       { path: 'users',     loadComponent: () => import('./pages/admin/users/users').then(m => m.AdminUsers) },
       { path: 'courses',   loadComponent: () => import('./pages/admin/courses/courses').then(m => m.AdminCourses) },
-      { path: 'analytics', loadComponent: () => import('./pages/admin/analytics/analytics').then(m => m.AdminAnalytics) },
-      { path: 'profile',   loadComponent: () => import('./pages/shared/profile/profile').then(m => m.ProfilePage) },
+      { path: 'analytics',   loadComponent: () => import('./pages/admin/analytics/analytics').then(m => m.AdminAnalytics) },
+      { path: 'monitoring',  loadComponent: () => import('./pages/admin/monitoring/monitoring').then(m => m.AdminMonitoring) },
+      { path: 'security',    loadComponent: () => import('./pages/admin/security/security').then(m => m.AdminSecurity) },
+      { path: 'profile',     loadComponent: () => import('./pages/shared/profile/profile').then(m => m.ProfilePage) },
     ],
   },
+
+  // Admin portal (dedicated URL)
+  { path: 'portail-admin', loadComponent: () => import('./pages/auth/admin-login/admin-login').then(m => m.AdminLogin) },
 
   { path: '**', redirectTo: 'login' },
 ];

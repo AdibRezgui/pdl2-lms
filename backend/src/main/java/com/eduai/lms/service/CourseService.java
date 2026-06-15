@@ -63,7 +63,7 @@ public class CourseService {
     }
 
     public CourseResponse createCourse(CourseRequest request, User trainer) {
-        boolean submitForReview = request.isPublished();
+        boolean publish = request.isPublished();
         Course course = Course.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -75,8 +75,8 @@ public class CourseService {
                 .language(request.getLanguage())
                 .tags(request.getTags())
                 .trainer(trainer)
-                .published(false)
-                .status(submitForReview ? CourseStatus.PENDING_REVIEW : CourseStatus.DRAFT)
+                .published(publish)
+                .status(publish ? CourseStatus.APPROVED : CourseStatus.DRAFT)
                 .build();
 
         return CourseResponse.from(courseRepository.save(course));
@@ -100,13 +100,10 @@ public class CourseService {
         course.setLanguage(request.getLanguage());
         course.setTags(request.getTags());
 
-        // If the course was rejected and trainer re-edits + submits → back to PENDING_REVIEW
         if (request.isPublished()) {
-            course.setStatus(CourseStatus.PENDING_REVIEW);
+            course.setStatus(CourseStatus.APPROVED);
             course.setRejectionReason(null);
-            course.setPublished(false);
-        } else if (course.getStatus() == CourseStatus.APPROVED) {
-            // Admin already approved: keep published state
+            course.setPublished(true);
         } else {
             course.setStatus(CourseStatus.DRAFT);
             course.setPublished(false);

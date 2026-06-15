@@ -27,11 +27,11 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <!-- Slim left nav -->
       <nav class="slim-nav">
         <a [routerLink]="'/trainer/courses'" class="nav-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         </a>
         <a [routerLink]="'/trainer/dashboard'" class="slim-link" title="Dashboard">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -64,18 +64,26 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
               [class.module-locked-row]="mod.locked"
               (click)="selectModule(mod)">
               <div class="flex items-center gap-2 flex-1 min-w-0">
-                <div class="mod-dot" [style.background]="mod.locked ? 'rgba(148,141,163,.3)' : activeModule()?.id === mod.id ? 'linear-gradient(135deg,#a78bfa,#fb7299)' : 'rgba(167,139,250,.25)'"></div>
+                <div class="mod-dot" [style.background]="mod.locked ? 'rgba(148,141,163,.3)' : activeModule()?.id === mod.id ? 'linear-gradient(135deg,#00B4C6,#00A8BC)' : 'rgba(0,180,198,.25)'"></div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
-                    <p class="text-sm font-semibold truncate" [style.color]="mod.locked ? '#948da3' : '#221f2c'">{{ mod.title }}</p>
-                    <svg *ngIf="mod.locked" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#948da3" stroke-width="2.5" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <p class="text-sm font-semibold truncate" [style.color]="mod.locked ? '#5a7a8a' : '#1a2d3a'">{{ mod.title }}</p>
+                    <svg *ngIf="mod.locked" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5a7a8a" stroke-width="2.5" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   </div>
                   <div class="flex items-center gap-2 mt-0.5">
-                    <p class="text-xs" style="color:#948da3">{{ mod.lessons.length }} leçon(s)</p>
-                    <span *ngIf="moduleQuizMap()[mod.id]" class="quiz-exists-badge">
+                    <p class="text-xs" style="color:#5a7a8a">{{ mod.lessons.length }} leçon(s)</p>
+                    <button *ngIf="moduleQuizMap()[mod.id]"
+                      (click)="$event.stopPropagation(); openQuizModal('MODULE', mod.id, mod.title)"
+                      class="quiz-exists-badge" title="Remplacer le quiz de ce module">
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                       Quiz
-                    </span>
+                    </button>
+                    <button *ngIf="!moduleQuizMap()[mod.id]"
+                      (click)="$event.stopPropagation(); openQuizModal('MODULE', mod.id, mod.title)"
+                      class="quiz-add-badge" title="Créer un quiz pour ce module">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Quiz
+                    </button>
                   </div>
                 </div>
               </div>
@@ -93,7 +101,7 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
             </div>
 
             <div *ngIf="!loading() && modules().length === 0" class="p-4 text-center">
-              <p class="text-xs" style="color:#948da3">Aucun module. Ajoutez-en un ci-dessous.</p>
+              <p class="text-xs" style="color:#5a7a8a">Aucun module. Ajoutez-en un ci-dessous.</p>
             </div>
 
             <!-- Quiz Final du cours -->
@@ -105,8 +113,8 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
               <div *ngIf="courseFinalQuiz()" class="fq-card">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-semibold truncate" style="color:#221f2c">{{ courseFinalQuiz()!.title }}</p>
-                  <p class="text-xs" style="color:#948da3">{{ courseFinalQuiz()!.questionsCount }} questions</p>
+                  <p class="text-xs font-semibold truncate" style="color:#1a2d3a">{{ courseFinalQuiz()!.title }}</p>
+                  <p class="text-xs" style="color:#5a7a8a">{{ courseFinalQuiz()!.questionsCount }} questions</p>
                 </div>
               </div>
               <div *ngIf="!courseFinalQuiz()" class="fq-empty">
@@ -120,7 +128,7 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
           </div>
 
           <div class="add-module-form">
-            <p class="text-xs font-semibold mb-2" style="color:#221f2c">Nouveau module</p>
+            <p class="text-xs font-semibold mb-2" style="color:#1a2d3a">Nouveau module</p>
             <input [(ngModel)]="newModuleTitle" placeholder="Titre du module..."
               class="input-field text-sm mb-2" style="height:36px" (keydown.enter)="addModule()" />
             <button (click)="addModule()" [disabled]="!newModuleTitle.trim() || savingModule()"
@@ -134,20 +142,16 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
         <main class="main-panel">
           <div *ngIf="!activeModule()" class="flex flex-col items-center justify-center h-full gap-4">
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            <p class="text-sm font-semibold" style="color:#948da3">Sélectionnez un module pour gérer ses leçons</p>
+            <p class="text-sm font-semibold" style="color:#5a7a8a">Sélectionnez un module pour gérer ses leçons</p>
           </div>
 
           <div *ngIf="activeModule()" class="module-content">
             <div class="content-header">
               <div>
-                <h2 class="font-display font-bold text-xl" style="color:#221f2c">{{ activeModule()!.title }}</h2>
-                <p class="text-sm" style="color:#948da3">{{ activeModule()!.lessons.length }} leçon(s)</p>
+                <h2 class="font-display font-bold text-xl" style="color:#1a2d3a">{{ activeModule()!.title }}</h2>
+                <p class="text-sm" style="color:#5a7a8a">{{ activeModule()!.lessons.length }} leçon(s)</p>
               </div>
               <div class="flex gap-2">
-                <button (click)="openQuizModal('MODULE', activeModule()!.id, activeModule()!.title)" class="quiz-ai-btn">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  {{ moduleQuizMap()[activeModule()!.id] ? 'Remplacer' : 'Créer un quiz' }}
-                </button>
                 <button (click)="openNewLesson()" class="btn-primary">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Ajouter une leçon
@@ -161,10 +165,10 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
                   {{ typeLabel(lesson.type) }}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold" style="color:#221f2c">{{ lesson.title }}</p>
-                  <p *ngIf="lesson.durationMinutes" class="text-xs mt-0.5" style="color:#948da3">{{ lesson.durationMinutes }} min</p>
-                  <p *ngIf="lesson.videoUrl" class="text-xs mt-0.5 truncate" style="color:#a78bfa">{{ lesson.videoUrl }}</p>
-                  <p *ngIf="lesson.pdfUrl" class="text-xs mt-0.5 truncate" style="color:#fb7299">{{ lesson.pdfUrl }}</p>
+                  <p class="text-sm font-semibold" style="color:#1a2d3a">{{ lesson.title }}</p>
+                  <p *ngIf="lesson.durationMinutes" class="text-xs mt-0.5" style="color:#5a7a8a">{{ lesson.durationMinutes }} min</p>
+                  <p *ngIf="lesson.videoUrl" class="text-xs mt-0.5 truncate" style="color:#00B4C6">{{ lesson.videoUrl }}</p>
+                  <p *ngIf="lesson.pdfUrl" class="text-xs mt-0.5 truncate" style="color:#00A8BC">{{ lesson.pdfUrl }}</p>
                 </div>
                 <div class="flex gap-2 items-center">
                   <button (click)="editLesson(lesson)" class="edit-btn">Modifier</button>
@@ -175,7 +179,7 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
               </div>
               <div *ngIf="activeModule()!.lessons.length === 0" class="empty-lessons">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-                <p class="text-sm" style="color:#948da3">Aucune leçon. Cliquez sur "Ajouter une leçon".</p>
+                <p class="text-sm" style="color:#5a7a8a">Aucune leçon. Cliquez sur "Ajouter une leçon".</p>
               </div>
             </div>
           </div>
@@ -184,7 +188,7 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
         <!-- LESSON FORM PANEL -->
         <aside *ngIf="lessonFormOpen()" class="form-panel">
           <div class="form-header">
-            <h3 class="font-display font-bold" style="color:#221f2c">{{ editingLesson() ? 'Modifier la leçon' : 'Nouvelle leçon' }}</h3>
+            <h3 class="font-display font-bold" style="color:#1a2d3a">{{ editingLesson() ? 'Modifier la leçon' : 'Nouvelle leçon' }}</h3>
             <button (click)="closeForm()" class="close-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -198,21 +202,21 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
             <div class="field">
               <label class="flabel">Type de contenu</label>
               <div class="type-tabs">
-                <button *ngFor="let t of lessonTypes" (click)="lessonForm.type = t.value"
+                <button *ngFor="let t of lessonTypes" (click)="setLessonType(t.value)"
                   class="type-tab" [class.type-active]="lessonForm.type === t.value">
-                  <span [innerHTML]="t.icon"></span>{{ t.label }}
+                  <span class="type-dot" [style.background]="t.color"></span>{{ t.label }}
                 </button>
               </div>
             </div>
             <div *ngIf="lessonForm.type === 'VIDEO'" class="field">
-              <label class="flabel">Fichier vidéo (MP4, WebM — max 50 Mo)</label>
+              <label class="flabel">Fichier vidéo (MP4, WebM — max 200 Mo)</label>
               <div class="upload-zone" (click)="videoInput.click()" [class.uploading]="uploadingVideo()">
                 <input #videoInput type="file" accept="video/mp4,video/webm" class="hidden" (change)="onVideoFile($event)" />
                 <div *ngIf="!uploadingVideo() && !lessonForm.videoUrl" class="upload-placeholder">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                  <p class="text-sm" style="color:#948da3">Cliquez pour choisir une vidéo</p>
+                  <p class="text-sm" style="color:#5a7a8a">Cliquez pour choisir une vidéo</p>
                 </div>
-                <div *ngIf="uploadingVideo()" class="upload-loading"><div class="spinner"></div><p class="text-sm" style="color:#a78bfa">Upload en cours...</p></div>
+                <div *ngIf="uploadingVideo()" class="upload-loading"><div class="spinner"></div><p class="text-sm" style="color:#00B4C6">Upload en cours...</p></div>
                 <div *ngIf="!uploadingVideo() && lessonForm.videoUrl" class="upload-done">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   <p class="text-sm font-semibold truncate max-w-48" style="color:#1f9d6f">Vidéo uploadée</p>
@@ -224,14 +228,14 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
               <input [(ngModel)]="lessonForm.videoUrl" class="input-field" placeholder="https://youtube.com/watch?v=..." />
             </div>
             <div *ngIf="lessonForm.type === 'PDF'" class="field">
-              <label class="flabel">Fichier PDF (max 50 Mo)</label>
+              <label class="flabel">Fichier PDF (max 200 Mo)</label>
               <div class="upload-zone" (click)="pdfInput.click()" [class.uploading]="uploadingPdf()">
                 <input #pdfInput type="file" accept="application/pdf" class="hidden" (change)="onPdfFile($event)" />
                 <div *ngIf="!uploadingPdf() && !lessonForm.pdfUrl" class="upload-placeholder">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c4bdd6" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-                  <p class="text-sm" style="color:#948da3">Cliquez pour choisir un PDF</p>
+                  <p class="text-sm" style="color:#5a7a8a">Cliquez pour choisir un PDF</p>
                 </div>
-                <div *ngIf="uploadingPdf()" class="upload-loading"><div class="spinner"></div><p class="text-sm" style="color:#fb7299">Upload en cours...</p></div>
+                <div *ngIf="uploadingPdf()" class="upload-loading"><div class="spinner"></div><p class="text-sm" style="color:#00A8BC">Upload en cours...</p></div>
                 <div *ngIf="!uploadingPdf() && lessonForm.pdfUrl" class="upload-done">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   <p class="text-sm font-semibold" style="color:#1f9d6f">PDF uploadé</p>
@@ -245,10 +249,6 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
             <div *ngIf="lessonForm.type === 'TEXT'" class="field">
               <label class="flabel">Contenu texte</label>
               <textarea [(ngModel)]="lessonForm.content" rows="8" class="input-field resize-none" placeholder="Rédigez le contenu..."></textarea>
-            </div>
-            <div *ngIf="lessonForm.type === 'QUIZ'" class="info-box">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <p class="text-xs" style="color:#4a4458">Le quiz lié sera créé depuis l'espace Évaluations.</p>
             </div>
             <div class="field">
               <label class="flabel">Durée estimée (minutes)</label>
@@ -271,13 +271,13 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
 
           <div class="qm-header">
             <div class="qm-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div>
-              <p class="font-display font-bold text-base" style="color:#221f2c">
+              <p class="font-display font-bold text-base" style="color:#1a2d3a">
                 {{ quizModalTarget()?.scope === 'COURSE' ? 'Quiz Final du cours' : 'Créer un quiz de module' }}
               </p>
-              <p class="text-xs mt-0.5" style="color:#948da3">
+              <p class="text-xs mt-0.5" style="color:#5a7a8a">
                 <span class="scope-chip">{{ quizModalTarget()?.scope === 'COURSE' ? 'Cours' : 'Module' }}</span>
                 {{ quizModalTarget()?.label }}
               </p>
@@ -303,22 +303,22 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
             <div class="success-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p class="font-bold text-sm" style="color:#221f2c">Quiz créé avec succès !</p>
-            <p class="text-xs mt-1" style="color:#948da3">{{ quizGenResult()!.questionsCount }} question(s) · {{ quizGenResult()!.title }}</p>
+            <p class="font-bold text-sm" style="color:#1a2d3a">Quiz créé avec succès !</p>
+            <p class="text-xs mt-1" style="color:#5a7a8a">{{ quizGenResult()!.questionsCount }} question(s) · {{ quizGenResult()!.title }}</p>
             <button (click)="closeQuizModal()" class="btn-primary mt-4 justify-center" style="width:100%">Fermer</button>
           </div>
 
           <!-- AI MODE -->
           <div *ngIf="!quizGenResult() && quizMode()==='AI'" class="qm-body">
             <!-- MODULE scope: lesson picker -->
-            <div *ngIf="quizModalTarget()?.scope === 'MODULE' && activeModule()?.lessons?.length" class="mb-4">
+            <div *ngIf="quizModalTarget()?.scope === 'MODULE' && quizTargetModule()?.lessons?.length" class="mb-4">
               <p class="qm-section-label">Leçons à inclure</p>
               <div class="lesson-select-list">
-                <label *ngFor="let l of activeModule()!.lessons" class="lesson-select-item">
+                <label *ngFor="let l of quizTargetModule()!.lessons" class="lesson-select-item">
                   <input type="checkbox" [checked]="quizSelectedLessons().has(l.id)"
                     (change)="toggleLessonSelection(l.id)"
-                    style="accent-color:#a78bfa;width:14px;height:14px;flex-shrink:0;cursor:pointer" />
-                  <span class="text-xs" style="color:#4a4458;cursor:pointer">{{ l.title }}</span>
+                    style="accent-color:#00B4C6;width:14px;height:14px;flex-shrink:0;cursor:pointer" />
+                  <span class="text-xs" style="color:#2c3d4e;cursor:pointer">{{ l.title }}</span>
                 </label>
               </div>
               <p *ngIf="quizSelectedLessons().size === 0" class="text-xs mt-1" style="color:#ef4444">Sélectionnez au moins une leçon</p>
@@ -332,17 +332,17 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
                     <label class="lesson-select-item" style="gap:6px">
                       <input type="checkbox" [checked]="moduleFullySelected(mod)"
                         (change)="toggleModuleSelection(mod)"
-                        style="accent-color:#a78bfa;width:14px;height:14px;flex-shrink:0;cursor:pointer" />
-                      <span class="text-xs font-bold" style="color:#221f2c">{{ mod.title }}</span>
-                      <span class="text-xs" style="color:#948da3">({{ selectedInModule(mod) }}/{{ mod.lessons.length }})</span>
+                        style="accent-color:#00B4C6;width:14px;height:14px;flex-shrink:0;cursor:pointer" />
+                      <span class="text-xs font-bold" style="color:#1a2d3a">{{ mod.title }}</span>
+                      <span class="text-xs" style="color:#5a7a8a">({{ selectedInModule(mod) }}/{{ mod.lessons.length }})</span>
                     </label>
                   </div>
                   <div *ngFor="let l of mod.lessons" class="tree-lesson">
                     <label class="lesson-select-item" style="padding-left:18px">
                       <input type="checkbox" [checked]="quizSelectedLessons().has(l.id)"
                         (change)="toggleLessonSelection(l.id)"
-                        style="accent-color:#a78bfa;width:13px;height:13px;flex-shrink:0;cursor:pointer" />
-                      <span class="text-xs" style="color:#4a4458;cursor:pointer">{{ l.title }}</span>
+                        style="accent-color:#00B4C6;width:13px;height:13px;flex-shrink:0;cursor:pointer" />
+                      <span class="text-xs" style="color:#2c3d4e;cursor:pointer">{{ l.title }}</span>
                     </label>
                   </div>
                 </div>
@@ -354,9 +354,8 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
             </div>
             <p class="qm-section-label">Nombre de questions</p>
             <div class="count-selector">
-              <button *ngFor="let n of [10,20,40]" (click)="quizGenCount.set(n)"
-                class="count-btn" [class.count-active]="quizGenCount()===n">
-                {{ n }}<span class="count-sub">{{ n===10?'~15 min':n===20?'~25 min':'~45 min' }}</span>
+              <button class="count-btn count-active" style="cursor:default">
+                10<span class="count-sub">~15 min</span>
               </button>
             </div>
             <p class="qm-section-label mt-4">Type de questions</p>
@@ -415,8 +414,8 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
                 <label class="flabel">Mode</label>
                 <div class="flex gap-1 mt-1">
                   <div class="mode-hint">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#948da3" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-                    <span class="text-xs" style="color:#948da3">Cliquer la lettre pour la bonne réponse</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5a7a8a" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                    <span class="text-xs" style="color:#5a7a8a">Cliquer la lettre pour la bonne réponse</span>
                   </div>
                 </div>
               </div>
@@ -438,8 +437,8 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
                     [placeholder]="'Option ' + optLetter(idx) + '...'" />
                 </div>
               </div>
-              <p class="text-xs mt-1" style="color:#948da3">
-                Lettre <span style="color:#7c5ce0;font-weight:700">violette</span> = bonne réponse.
+              <p class="text-xs mt-1" style="color:#5a7a8a">
+                Lettre <span style="color:#007A8A;font-weight:700">violette</span> = bonne réponse.
                 <span *ngIf="manualQCorrects().size > 1" style="color:#d97706;font-weight:600"> Multiple sélections → QCM multi-réponses.</span>
               </p>
             </div>
@@ -466,22 +465,25 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
     </div>
   `,
   styles: [`
-    .slim-nav { width:56px; display:flex; flex-direction:column; align-items:center; padding:16px 0; gap:8px; background:rgba(255,253,251,.95); border-right:1px solid rgba(167,139,250,.1); }
-    .nav-logo { padding:8px; border-radius:12px; background:rgba(167,139,250,.1); margin-bottom:8px; display:flex; }
-    .slim-link { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#948da3; text-decoration:none; transition:all .2s; }
-    .slim-link:hover, .slim-link.active { background:rgba(167,139,250,.14); color:#7c5ce0; }
-    .module-panel { width:264px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid rgba(167,139,250,.12); background:rgba(255,253,251,.88); }
-    .panel-header { padding:20px 16px 14px; border-bottom:1px solid rgba(167,139,250,.1); }
-    .back-link { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:#948da3; text-decoration:none; margin-bottom:10px; transition:color .2s; }
-    .back-link:hover { color:#7c5ce0; }
-    .panel-title { font-family:'Fraunces',Georgia,serif; font-size:14px; font-weight:700; color:#221f2c; line-height:1.3; }
-    .panel-sub { font-size:11px; color:#948da3; margin-top:2px; }
+    .slim-nav { width:56px; display:flex; flex-direction:column; align-items:center; padding:16px 0; gap:8px; background:rgba(255,253,251,.95); border-right:1px solid rgba(0,180,198,.1); }
+    .nav-logo { padding:8px; border-radius:12px; background:rgba(0,180,198,.1); margin-bottom:8px; display:flex; }
+    .slim-link { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#5a7a8a; text-decoration:none; transition:all .2s; }
+    .slim-link:hover, .slim-link.active { background:rgba(0,180,198,.14); color:#007A8A; }
+    .module-panel { width:264px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid rgba(0,180,198,.12); background:rgba(255,253,251,.88); }
+    .panel-header { padding:20px 16px 14px; border-bottom:1px solid rgba(0,180,198,.1); }
+    .back-link { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:#5a7a8a; text-decoration:none; margin-bottom:10px; transition:color .2s; }
+    .back-link:hover { color:#007A8A; }
+    .panel-title { font-family:'Fraunces',Georgia,serif; font-size:14px; font-weight:700; color:#1a2d3a; line-height:1.3; }
+    .panel-sub { font-size:11px; color:#5a7a8a; margin-top:2px; }
     .panel-scroll { flex:1; overflow-y:auto; padding:8px 8px 0; }
     .module-item { display:flex; align-items:center; gap:8px; padding:10px 10px; border-radius:12px; cursor:pointer; transition:all .22s; margin-bottom:4px; }
-    .module-item:hover { background:rgba(167,139,250,.07); }
-    .module-active { background:rgba(167,139,250,.12) !important; border:1px solid rgba(167,139,250,.22); }
+    .module-item:hover { background:rgba(0,180,198,.07); }
+    .module-active { background:rgba(0,180,198,.12) !important; border:1px solid rgba(0,180,198,.22); }
     .mod-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .quiz-exists-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(31,157,111,.1); color:#1f9d6f; border:1px solid rgba(31,157,111,.22); white-space:nowrap; }
+    .quiz-exists-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(31,157,111,.1); color:#1f9d6f; border:1px solid rgba(31,157,111,.22); white-space:nowrap; cursor:pointer; font-family:inherit; transition:all .18s; }
+    .quiz-exists-badge:hover { background:rgba(31,157,111,.2); border-color:rgba(31,157,111,.4); }
+    .quiz-add-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(0,180,198,.08); color:#00A8BC; border:1px solid rgba(0,180,198,.22); white-space:nowrap; cursor:pointer; font-family:inherit; transition:all .18s; }
+    .quiz-add-badge:hover { background:rgba(0,180,198,.18); border-color:#00B4C6; color:#007A8A; }
     /* Quiz Final section */
     .final-quiz-section { margin:8px 4px 4px; padding:10px 12px; border-radius:14px; background:rgba(245,165,36,.06); border:1px solid rgba(245,165,36,.18); }
     .fq-label { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#d97706; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
@@ -489,113 +491,115 @@ const EMPTY_LESSON = (): Partial<Lesson> => ({
     .fq-empty { font-size:11px; color:#c4bdd6; margin-bottom:7px; padding:4px 0; }
     .fq-btn { width:100%; padding:7px 10px; border-radius:10px; background:rgba(245,165,36,.12); border:1px solid rgba(245,165,36,.25); color:#d97706; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:5px; transition:all .18s; }
     .fq-btn:hover { background:rgba(245,165,36,.22); }
-    .add-module-form { padding:10px 12px 16px; border-top:1px solid rgba(167,139,250,.1); margin-top:4px; }
+    .add-module-form { padding:10px 12px 16px; border-top:1px solid rgba(0,180,198,.1); margin-top:4px; }
     .main-panel { flex:1; overflow-y:auto; display:flex; flex-direction:column; min-width:0; }
     .module-content { display:flex; flex-direction:column; flex:1; }
-    .content-header { display:flex; align-items:center; justify-content:space-between; padding:22px 28px 16px; border-bottom:1px solid rgba(167,139,250,.1); gap:12px; flex-wrap:wrap; }
+    .content-header { display:flex; align-items:center; justify-content:space-between; padding:22px 28px 16px; border-bottom:1px solid rgba(0,180,198,.1); gap:12px; flex-wrap:wrap; }
     .lessons-area { padding:16px 28px; display:flex; flex-direction:column; gap:10px; }
-    .lesson-card { display:flex; align-items:center; gap:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.7); border:1px solid rgba(167,139,250,.12); transition:all .22s; }
-    .lesson-card:hover { border-color:rgba(167,139,250,.28); box-shadow:0 6px 20px rgba(167,139,250,.1); }
+    .lesson-card { display:flex; align-items:center; gap:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.7); border:1px solid rgba(0,180,198,.12); transition:all .22s; }
+    .lesson-card:hover { border-color:rgba(0,180,198,.28); box-shadow:0 6px 20px rgba(0,180,198,.1); }
     .lesson-type-badge { font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
     .empty-lessons { display:flex; flex-direction:column; align-items:center; gap:10px; padding:40px; }
-    .edit-btn { padding:6px 12px; border-radius:10px; background:rgba(167,139,250,.1); border:none; color:#7c5ce0; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .2s; }
-    .edit-btn:hover { background:rgba(167,139,250,.2); }
+    .edit-btn { padding:6px 12px; border-radius:10px; background:rgba(0,180,198,.1); border:none; color:#007A8A; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .2s; }
+    .edit-btn:hover { background:rgba(0,180,198,.2); }
     .mod-actions { display:flex; align-items:center; gap:4px; flex-shrink:0; }
-    .lock-btn { width:28px; height:28px; border-radius:9px; background:rgba(148,141,163,.08); border:none; color:#948da3; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
-    .lock-btn:hover { background:rgba(167,139,250,.15); color:#7c5ce0; }
-    .lock-btn-locked { background:rgba(167,139,250,.12); color:#7c5ce0; }
-    .lock-btn-locked:hover { background:rgba(167,139,250,.22); }
+    .lock-btn { width:28px; height:28px; border-radius:9px; background:rgba(148,141,163,.08); border:none; color:#5a7a8a; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .lock-btn:hover { background:rgba(0,180,198,.15); color:#007A8A; }
+    .lock-btn-locked { background:rgba(0,180,198,.12); color:#007A8A; }
+    .lock-btn-locked:hover { background:rgba(0,180,198,.22); }
     .module-locked-row { opacity:.75; }
     .del-btn { width:28px; height:28px; border-radius:9px; background:rgba(242,92,120,.08); border:none; color:#f25c78; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; }
     .del-btn:hover { background:rgba(242,92,120,.18); }
-    .form-panel { width:380px; flex-shrink:0; border-left:1px solid rgba(167,139,250,.14); background:rgba(255,253,251,.95); display:flex; flex-direction:column; }
-    .form-header { display:flex; align-items:center; justify-content:space-between; padding:20px 20px 14px; border-bottom:1px solid rgba(167,139,250,.1); }
-    .close-btn { width:30px; height:30px; border-radius:9px; background:rgba(167,139,250,.08); border:none; color:#948da3; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .form-panel { width:380px; flex-shrink:0; border-left:1px solid rgba(0,180,198,.14); background:rgba(255,253,251,.95); display:flex; flex-direction:column; }
+    .form-header { display:flex; align-items:center; justify-content:space-between; padding:20px 20px 14px; border-bottom:1px solid rgba(0,180,198,.1); }
+    .close-btn { width:30px; height:30px; border-radius:9px; background:rgba(0,180,198,.08); border:none; color:#5a7a8a; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
     .close-btn:hover { background:rgba(242,92,120,.12); color:#f25c78; }
     .form-scroll { flex:1; overflow-y:auto; padding:16px 20px; }
-    .form-footer { display:flex; gap:10px; padding:14px 20px; border-top:1px solid rgba(167,139,250,.1); }
+    .form-footer { display:flex; gap:10px; padding:14px 20px; border-top:1px solid rgba(0,180,198,.1); }
     .field { margin-bottom:16px; }
-    .flabel { display:block; font-size:11px; font-weight:700; color:#948da3; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+    .flabel { display:block; font-size:11px; font-weight:700; color:#5a7a8a; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
     .type-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-    .type-tab { display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:10px; border:1px solid rgba(167,139,250,.2); background:transparent; font-size:12px; font-weight:600; color:#948da3; cursor:pointer; font-family:inherit; transition:all .22s; }
-    .type-tab:hover { border-color:rgba(167,139,250,.4); color:#221f2c; }
-    .type-active { background:rgba(167,139,250,.12) !important; border-color:#a78bfa !important; color:#7c5ce0 !important; }
-    .upload-zone { border:2px dashed rgba(167,139,250,.3); border-radius:16px; padding:20px; cursor:pointer; transition:all .22s; min-height:90px; display:flex; align-items:center; justify-content:center; }
-    .upload-zone:hover { border-color:rgba(167,139,250,.6); background:rgba(167,139,250,.04); }
-    .upload-zone.uploading { border-color:#a78bfa; background:rgba(167,139,250,.06); cursor:default; }
+    .type-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .type-tab { display:flex; align-items:center; gap:5px; padding:7px 12px; border-radius:10px; border:1px solid rgba(0,180,198,.2); background:transparent; font-size:12px; font-weight:600; color:#5a7a8a; cursor:pointer; font-family:inherit; transition:all .22s; }
+    .type-tab:hover { border-color:rgba(0,180,198,.4); color:#1a2d3a; }
+    .type-active { background:rgba(0,180,198,.12) !important; border-color:#00B4C6 !important; color:#007A8A !important; }
+    .upload-zone { border:2px dashed rgba(0,180,198,.3); border-radius:16px; padding:20px; cursor:pointer; transition:all .22s; min-height:90px; display:flex; align-items:center; justify-content:center; }
+    .upload-zone:hover { border-color:rgba(0,180,198,.6); background:rgba(0,180,198,.04); }
+    .upload-zone.uploading { border-color:#00B4C6; background:rgba(0,180,198,.06); cursor:default; }
     .upload-placeholder { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; }
     .upload-loading { display:flex; flex-direction:column; align-items:center; gap:8px; }
     .upload-done { display:flex; align-items:center; gap:10px; width:100%; }
-    .spinner { width:28px; height:28px; border:3px solid rgba(167,139,250,.2); border-top-color:#a78bfa; border-radius:50%; animation:spin .8s linear infinite; }
+    .spinner { width:28px; height:28px; border:3px solid rgba(0,180,198,.2); border-top-color:#00B4C6; border-radius:50%; animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .or-divider { text-align:center; font-size:11px; color:#c4bdd6; margin:8px 0; font-weight:600; letter-spacing:.06em; }
     .clear-btn { width:24px; height:24px; border-radius:6px; background:rgba(242,92,120,.1); border:none; color:#f25c78; cursor:pointer; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:auto; }
-    .info-box { display:flex; gap:8px; padding:12px 14px; border-radius:13px; background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.14); margin-bottom:16px; }
+    .info-box { display:flex; gap:8px; padding:12px 14px; border-radius:13px; background:rgba(0,180,198,.06); border:1px solid rgba(0,180,198,.14); margin-bottom:16px; }
     .err-banner { padding:10px 14px; border-radius:12px; background:rgba(242,92,120,.08); border:1px solid rgba(242,92,120,.22); color:#f25c78; font-size:13px; }
-    .quiz-ai-btn { display:inline-flex; align-items:center; gap:5px; padding:8px 14px; border-radius:12px; background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.22); color:#7c5ce0; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
-    .quiz-ai-btn:hover { background:rgba(167,139,250,.22); border-color:#a78bfa; }
+    .quiz-ai-btn { display:inline-flex; align-items:center; gap:5px; padding:8px 14px; border-radius:12px; background:rgba(0,180,198,.1); border:1px solid rgba(0,180,198,.22); color:#007A8A; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
+    .quiz-ai-btn:hover { background:rgba(0,180,198,.22); border-color:#00B4C6; }
     /* Modal */
     .modal-backdrop { position:fixed; inset:0; background:rgba(34,31,44,.45); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:center; justify-content:center; animation:fadeIn .18s ease; }
     @keyframes fadeIn { from{opacity:0}to{opacity:1} }
-    .quiz-modal { background:#fffdfb; border-radius:24px; width:500px; max-width:calc(100vw - 32px); max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(34,31,44,.22); border:1px solid rgba(167,139,250,.18); animation:slideUp .22s cubic-bezier(.16,1,.3,1); }
+    .quiz-modal { background:#f5fdfe; border-radius:24px; width:500px; max-width:calc(100vw - 32px); max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(34,31,44,.22); border:1px solid rgba(0,180,198,.18); animation:slideUp .22s cubic-bezier(.16,1,.3,1); }
     @keyframes slideUp { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
-    .qm-header { display:flex; align-items:center; gap:12px; padding:20px 22px 16px; border-bottom:1px solid rgba(167,139,250,.1); position:sticky; top:0; background:#fffdfb; z-index:1; }
-    .qm-icon { width:40px; height:40px; border-radius:14px; background:rgba(167,139,250,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .scope-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(167,139,250,.14); color:#7c5ce0; margin-right:6px; }
-    .qm-tabs { display:flex; border-bottom:1px solid rgba(167,139,250,.1); background:#fffdfb; position:sticky; top:76px; z-index:1; }
-    .qm-tab { flex:1; padding:11px 8px; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#948da3; display:flex; align-items:center; justify-content:center; gap:6px; border-bottom:2px solid transparent; transition:all .2s; }
-    .qm-tab:hover { color:#7c5ce0; }
-    .qm-tab-active { color:#7c5ce0 !important; border-bottom-color:#a78bfa !important; }
+    .qm-header { display:flex; align-items:center; gap:12px; padding:20px 22px 16px; border-bottom:1px solid rgba(0,180,198,.1); position:sticky; top:0; background:#f5fdfe; z-index:1; }
+    .qm-icon { width:40px; height:40px; border-radius:14px; background:rgba(0,180,198,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .scope-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(0,180,198,.14); color:#007A8A; margin-right:6px; }
+    .qm-tabs { display:flex; border-bottom:1px solid rgba(0,180,198,.1); background:#f5fdfe; position:sticky; top:76px; z-index:1; }
+    .qm-tab { flex:1; padding:11px 8px; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#5a7a8a; display:flex; align-items:center; justify-content:center; gap:6px; border-bottom:2px solid transparent; transition:all .2s; }
+    .qm-tab:hover { color:#007A8A; }
+    .qm-tab-active { color:#007A8A !important; border-bottom-color:#00B4C6 !important; }
     .qm-body { padding:20px 22px 22px; }
     .qm-manual-body { padding:20px 22px 22px; }
-    .qm-section-label { font-size:11px; font-weight:700; color:#948da3; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; display:block; }
-    .lesson-select-list { display:flex; flex-direction:column; gap:5px; max-height:130px; overflow-y:auto; padding:8px 10px; border:1px solid rgba(167,139,250,.14); border-radius:12px; background:rgba(167,139,250,.03); }
+    .qm-section-label { font-size:11px; font-weight:700; color:#5a7a8a; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; display:block; }
+    .lesson-select-list { display:flex; flex-direction:column; gap:5px; max-height:130px; overflow-y:auto; padding:8px 10px; border:1px solid rgba(0,180,198,.14); border-radius:12px; background:rgba(0,180,198,.03); }
     .lesson-select-item { display:flex; align-items:center; gap:8px; padding:3px 0; }
-    .course-lesson-tree { max-height:180px; overflow-y:auto; border:1px solid rgba(167,139,250,.14); border-radius:12px; background:rgba(167,139,250,.03); }
-    .tree-module { border-bottom:1px solid rgba(167,139,250,.08); }
+    .course-lesson-tree { max-height:180px; overflow-y:auto; border:1px solid rgba(0,180,198,.14); border-radius:12px; background:rgba(0,180,198,.03); }
+    .tree-module { border-bottom:1px solid rgba(0,180,198,.08); }
     .tree-module:last-child { border-bottom:none; }
-    .tree-mod-header { padding:6px 10px 4px; background:rgba(167,139,250,.05); }
+    .tree-mod-header { padding:6px 10px 4px; background:rgba(0,180,198,.05); }
     .tree-lesson { padding:1px 10px 1px 8px; }
     .count-selector { display:flex; gap:10px; }
-    .count-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 8px; border-radius:14px; border:2px solid rgba(167,139,250,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:22px; font-weight:700; color:#221f2c; transition:all .22s; }
-    .count-btn:hover { border-color:rgba(167,139,250,.4); background:rgba(167,139,250,.04); }
-    .count-active { border-color:#a78bfa !important; background:rgba(167,139,250,.1) !important; color:#7c5ce0 !important; }
-    .count-sub { font-size:11px; font-weight:500; color:#948da3; }
-    .count-active .count-sub { color:#a78bfa; }
+    .count-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 8px; border-radius:14px; border:2px solid rgba(0,180,198,.18); background:transparent; cursor:pointer; font-family:inherit; font-size:22px; font-weight:700; color:#1a2d3a; transition:all .22s; }
+    .count-btn:hover { border-color:rgba(0,180,198,.4); background:rgba(0,180,198,.04); }
+    .count-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.1) !important; color:#007A8A !important; }
+    .count-sub { font-size:11px; font-weight:500; color:#5a7a8a; }
+    .count-active .count-sub { color:#00B4C6; }
     .type-selector { display:flex; gap:8px; }
-    .qtype-btn { flex:1; padding:9px 8px; border-radius:12px; border:1.5px solid rgba(167,139,250,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#948da3; transition:all .2s; }
-    .qtype-btn:hover { border-color:rgba(167,139,250,.4); color:#221f2c; }
-    .qtype-active { border-color:#a78bfa !important; background:rgba(167,139,250,.1) !important; color:#7c5ce0 !important; }
+    .qtype-btn { flex:1; padding:9px 8px; border-radius:12px; border:1.5px solid rgba(0,180,198,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:600; color:#5a7a8a; transition:all .2s; }
+    .qtype-btn:hover { border-color:rgba(0,180,198,.4); color:#1a2d3a; }
+    .qtype-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.1) !important; color:#007A8A !important; }
     /* Manual quiz */
     .mini-count-row { display:flex; gap:4px; margin-top:6px; }
-    .mini-count-btn { width:30px; height:28px; border-radius:8px; border:1.5px solid rgba(167,139,250,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#948da3; transition:all .18s; display:flex; align-items:center; justify-content:center; }
-    .mini-count-btn:hover { border-color:rgba(167,139,250,.4); color:#221f2c; }
-    .mini-count-active { border-color:#a78bfa !important; background:rgba(167,139,250,.12) !important; color:#7c5ce0 !important; }
+    .mini-count-btn { width:30px; height:28px; border-radius:8px; border:1.5px solid rgba(0,180,198,.2); background:transparent; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#5a7a8a; transition:all .18s; display:flex; align-items:center; justify-content:center; }
+    .mini-count-btn:hover { border-color:rgba(0,180,198,.4); color:#1a2d3a; }
+    .mini-count-active { border-color:#00B4C6 !important; background:rgba(0,180,198,.12) !important; color:#007A8A !important; }
     .mode-hint { display:flex; align-items:center; gap:5px; margin-top:6px; }
     .manual-q-list { display:flex; flex-direction:column; gap:6px; }
-    .manual-q-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(167,139,250,.05); border:1px solid rgba(167,139,250,.1); }
-    .manual-q-num { width:22px; height:22px; border-radius:7px; background:rgba(167,139,250,.15); color:#7c5ce0; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .manual-q-text { font-size:12px; color:#4a4458; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .manual-q-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(0,180,198,.05); border:1px solid rgba(0,180,198,.1); }
+    .manual-q-num { width:22px; height:22px; border-radius:7px; background:rgba(0,180,198,.15); color:#007A8A; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .manual-q-text { font-size:12px; color:#2c3d4e; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .multi-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(245,165,36,.12); color:#d97706; border:1px solid rgba(245,165,36,.2); flex-shrink:0; }
-    .qm-divider { height:1px; background:rgba(167,139,250,.12); margin:12px 0; }
+    .qm-divider { height:1px; background:rgba(0,180,198,.12); margin:12px 0; }
     .manual-opts { display:flex; flex-direction:column; gap:6px; }
     .manual-opt-row { display:flex; align-items:center; gap:8px; }
-    .opt-letter-btn { width:30px; height:34px; border-radius:8px; background:rgba(167,139,250,.08); border:1.5px solid rgba(167,139,250,.18); color:#948da3; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s; font-family:inherit; }
-    .opt-letter-btn:hover { background:rgba(167,139,250,.15); border-color:rgba(167,139,250,.3); color:#7c5ce0; }
-    .opt-letter-correct { background:rgba(139,110,242,.18) !important; border-color:#a78bfa !important; color:#7c5ce0 !important; }
+    .opt-letter-btn { width:30px; height:34px; border-radius:8px; background:rgba(0,180,198,.08); border:1.5px solid rgba(0,180,198,.18); color:#5a7a8a; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s; font-family:inherit; }
+    .opt-letter-btn:hover { background:rgba(0,180,198,.15); border-color:rgba(0,180,198,.3); color:#007A8A; }
+    .opt-letter-correct { background:rgba(0,180,198,.18) !important; border-color:#00B4C6 !important; color:#007A8A !important; }
     .qm-success { padding:28px 22px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
     .success-icon { width:56px; height:56px; border-radius:20px; background:rgba(110,231,183,.12); border:1px solid rgba(110,231,183,.3); display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
     .spinner-sm { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
     /* Shared */
-    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:linear-gradient(135deg,#a78bfa,#fb7299); border:none; color:white; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(167,139,250,.3); white-space:nowrap; }
-    .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(167,139,250,.42); }
+    .quiz-success-inline { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px; background:rgba(31,157,111,.08); border:1px solid rgba(31,157,111,.22); color:#1f9d6f; font-size:12px; font-weight:600; margin-bottom:10px; }
+    .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:linear-gradient(135deg,#00B4C6,#00A8BC); border:none; color:white; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .22s; box-shadow:0 4px 14px rgba(0,180,198,.3); white-space:nowrap; }
+    .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,180,198,.42); }
     .btn-primary:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
-    .btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.2); color:#7c5ce0; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
-    .btn-secondary:hover { background:rgba(167,139,250,.18); }
-    .input-field { width:100%; padding:9px 12px; border-radius:12px; border:1px solid rgba(167,139,250,.2); background:rgba(255,255,255,.7); font-size:14px; color:#221f2c; font-family:inherit; outline:none; transition:border .2s; box-sizing:border-box; }
-    .input-field:focus { border-color:#a78bfa; background:#fff; }
+    .btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:10px 18px; border-radius:14px; background:rgba(0,180,198,.1); border:1px solid rgba(0,180,198,.2); color:#007A8A; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .22s; white-space:nowrap; }
+    .btn-secondary:hover { background:rgba(0,180,198,.18); }
+    .input-field { width:100%; padding:9px 12px; border-radius:12px; border:1px solid rgba(0,180,198,.2); background:rgba(255,255,255,.7); font-size:14px; color:#1a2d3a; font-family:inherit; outline:none; transition:border .2s; box-sizing:border-box; }
+    .input-field:focus { border-color:#00B4C6; background:#fff; }
     .resize-none { resize:none; }
-    .skeleton { background:linear-gradient(90deg,rgba(167,139,250,.08) 25%,rgba(167,139,250,.15) 50%,rgba(167,139,250,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
+    .skeleton { background:linear-gradient(90deg,rgba(0,180,198,.08) 25%,rgba(0,180,198,.15) 50%,rgba(0,180,198,.08) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
     @keyframes shimmer { to { background-position:-200% 0; } }
     .w-full { width:100%; }
     .ml-auto { margin-left:auto; }
@@ -646,6 +650,12 @@ export class TrainerCourseContent implements OnInit {
 
   optionIndices = computed(() => Array.from({ length: this.manualQOptionCount() }, (_, i) => i));
 
+  quizTargetModule = computed(() => {
+    const t = this.quizModalTarget();
+    if (!t || t.scope !== 'MODULE') return null;
+    return this.modules().find(m => m.id === t.id) ?? null;
+  });
+
   moduleQuizMap = signal<Record<string, QuizRef>>({});
 
   questionTypes = [
@@ -654,10 +664,9 @@ export class TrainerCourseContent implements OnInit {
   ];
 
   lessonTypes = [
-    { value: 'VIDEO', label: 'Vidéo',  color: '#a78bfa', icon: '<svg width="11" height="11" viewBox="0 0 24 24" fill="#a78bfa"><polygon points="5 3 19 12 5 21 5 3"/></svg>' },
-    { value: 'PDF',   label: 'PDF',    color: '#fb7299', icon: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fb7299" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>' },
-    { value: 'TEXT',  label: 'Texte',  color: '#1f9d6f', icon: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1f9d6f" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/></svg>' },
-    { value: 'QUIZ',  label: 'Quiz',   color: '#f5a524', icon: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/></svg>' },
+    { value: 'VIDEO', label: 'Vidéo', color: '#00B4C6' },
+    { value: 'PDF',   label: 'PDF',   color: '#00A8BC' },
+    { value: 'TEXT',  label: 'Texte', color: '#1f9d6f' },
   ];
 
   get role() { return this.auth.user()?.role ?? 'TRAINER'; }
@@ -760,10 +769,33 @@ export class TrainerCourseContent implements OnInit {
     });
   }
 
+  setLessonType(type: string) {
+    this.lessonForm.type = type;
+    this.quizGenResult.set(null);
+    if (type === 'QUIZ') {
+      const mod = this.activeModule();
+      if (!mod) return;
+      this.quizMode.set('AI');
+      this.quizGenCount.set(10);
+      this.quizQuestionType.set('SINGLE');
+      this.quizGenError.set('');
+      this.quizModalTarget.set({ scope: 'MODULE', id: mod.id, label: mod.title });
+      this.quizSelectedLessons.set(new Set(mod.lessons.map((l: Lesson) => l.id)));
+      this.manualQuestions.set([]);
+      this.manualQText = '';
+      this.manualQOptions = ['', '', '', '', '', ''];
+      this.manualQOptionCount.set(4);
+      this.manualQCorrects.set(new Set([0]));
+      this.manualQuizError.set('');
+      this.manualAddError.set('');
+    }
+  }
+
   openNewLesson() {
     this.editingLesson.set(null);
     this.lessonForm = EMPTY_LESSON();
     this.formError.set('');
+    this.quizGenResult.set(null);
     this.lessonFormOpen.set(true);
   }
 
@@ -838,17 +870,27 @@ export class TrainerCourseContent implements OnInit {
   }
 
   private uploadFile(file: File, kind: 'video' | 'pdf') {
+    const MAX_MB = 200;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      this.formError.set(`Fichier trop volumineux — max ${MAX_MB} Mo (votre fichier : ${(file.size / 1024 / 1024).toFixed(1)} Mo)`);
+      this.toast.error(`Fichier trop volumineux (max ${MAX_MB} Mo)`, 'Upload impossible');
+      return;
+    }
     if (kind === 'video') this.uploadingVideo.set(true);
     else this.uploadingPdf.set(true);
+    this.formError.set('');
     const formData = new FormData();
     formData.append('file', file);
     this.api.postForm<string>('/lessons/upload', formData).subscribe({
       next: url => {
         if (kind === 'video') { this.lessonForm.videoUrl = url; this.uploadingVideo.set(false); }
         else { this.lessonForm.pdfUrl = url; this.uploadingPdf.set(false); }
+        this.toast.success('Fichier uploadé avec succès', 'Upload');
       },
       error: (err) => {
-        this.formError.set(err?.error?.message ?? "Erreur lors de l'upload.");
+        const msg = err?.error?.message ?? "Erreur lors de l'upload.";
+        this.formError.set(msg);
+        this.toast.error(msg, 'Upload échoué');
         if (kind === 'video') this.uploadingVideo.set(false);
         else this.uploadingPdf.set(false);
       },
@@ -856,7 +898,7 @@ export class TrainerCourseContent implements OnInit {
   }
 
   typeColor(type: string): string {
-    return ({ VIDEO: '#a78bfa', PDF: '#fb7299', TEXT: '#1f9d6f', QUIZ: '#f5a524' } as any)[type] ?? '#948da3';
+    return ({ VIDEO: '#00B4C6', PDF: '#00A8BC', TEXT: '#1f9d6f', QUIZ: '#f5a524' } as any)[type] ?? '#5a7a8a';
   }
   typeLabel(type: string): string {
     return ({ VIDEO: 'Vidéo', PDF: 'PDF', TEXT: 'Texte', QUIZ: 'Quiz' } as any)[type] ?? type;
@@ -871,7 +913,8 @@ export class TrainerCourseContent implements OnInit {
     this.quizGenResult.set(null);
     this.quizGenError.set('');
     if (scope === 'MODULE') {
-      const ids = new Set(this.activeModule()?.lessons.map(l => l.id) ?? []);
+      const mod = this.modules().find(m => m.id === id) ?? this.activeModule();
+      const ids = new Set(mod?.lessons.map(l => l.id) ?? []);
       this.quizSelectedLessons.set(ids);
     } else {
       // Pre-select ALL lessons from ALL modules for the final course quiz
@@ -937,6 +980,62 @@ export class TrainerCourseContent implements OnInit {
     this.quizSelectedLessons.set(curr);
   }
 
+  generateQuizInline() {
+    if (!this.lessonForm.title?.trim()) { this.formError.set('Le titre est obligatoire.'); return; }
+    const mod = this.activeModule();
+    if (!mod) return;
+    this.savingLesson.set(true);
+    this.formError.set('');
+    const payload = {
+      title: this.lessonForm.title, type: 'QUIZ',
+      content: null, videoUrl: null, pdfUrl: null,
+      durationMinutes: this.lessonForm.durationMinutes ?? 0,
+      sortOrder: mod.lessons.length, free: false,
+    };
+    this.api.post<Lesson>(`/modules/${mod.id}/lessons`, payload).subscribe({
+      next: saved => {
+        this.modules.update(list => list.map(m =>
+          m.id !== mod.id ? m : { ...m, lessons: [...m.lessons, saved] }
+        ));
+        this.activeModule.update(m => m
+          ? { ...m, lessons: this.modules().find(x => x.id === m.id)?.lessons ?? m.lessons }
+          : m
+        );
+        this.savingLesson.set(false);
+        this.generateQuiz();
+      },
+      error: () => { this.formError.set('Erreur lors de la sauvegarde.'); this.savingLesson.set(false); },
+    });
+  }
+
+  createManualQuizInline() {
+    if (!this.lessonForm.title?.trim()) { this.formError.set('Le titre est obligatoire.'); return; }
+    const mod = this.activeModule();
+    if (!mod) return;
+    this.savingLesson.set(true);
+    this.formError.set('');
+    const payload = {
+      title: this.lessonForm.title, type: 'QUIZ',
+      content: null, videoUrl: null, pdfUrl: null,
+      durationMinutes: this.lessonForm.durationMinutes ?? 0,
+      sortOrder: mod.lessons.length, free: false,
+    };
+    this.api.post<Lesson>(`/modules/${mod.id}/lessons`, payload).subscribe({
+      next: saved => {
+        this.modules.update(list => list.map(m =>
+          m.id !== mod.id ? m : { ...m, lessons: [...m.lessons, saved] }
+        ));
+        this.activeModule.update(m => m
+          ? { ...m, lessons: this.modules().find(x => x.id === m.id)?.lessons ?? m.lessons }
+          : m
+        );
+        this.savingLesson.set(false);
+        this.createManualQuiz();
+      },
+      error: () => { this.formError.set('Erreur lors de la sauvegarde.'); this.savingLesson.set(false); },
+    });
+  }
+
   generateQuiz() {
     const target = this.quizModalTarget();
     if (!target) return;
@@ -960,6 +1059,7 @@ export class TrainerCourseContent implements OnInit {
           this.quizGenResult.set({ title: res.title, questionsCount: res.questionsCount });
           if (target.scope === 'MODULE') {
             this.moduleQuizMap.set({ ...this.moduleQuizMap(), [target.id]: { id: res.quizId, title: res.title, questionsCount: res.questionsCount } });
+            if (this.lessonFormOpen()) setTimeout(() => this.closeForm(), 1200);
           } else {
             this.courseFinalQuiz.set({ id: res.quizId, title: res.title, questionsCount: res.questionsCount });
           }
@@ -1022,6 +1122,7 @@ export class TrainerCourseContent implements OnInit {
           this.quizGenResult.set({ title: quiz.title, questionsCount: qs.length });
           if (target.scope === 'MODULE') {
             this.moduleQuizMap.set({ ...this.moduleQuizMap(), [target.id]: { id: quiz.id, title: quiz.title, questionsCount: qs.length } });
+            if (this.lessonFormOpen()) setTimeout(() => this.closeForm(), 1200);
           } else {
             this.courseFinalQuiz.set({ id: quiz.id, title: quiz.title, questionsCount: qs.length });
           }

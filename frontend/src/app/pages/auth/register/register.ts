@@ -82,34 +82,34 @@ import { AuthService } from '../../../core/services/auth';
   styles: [`
     .page {
       min-height:100vh; display:flex; align-items:center; justify-content:center;
-      background: linear-gradient(160deg, #fffdfb 0%, #fdf2f8 50%, #f3edff 100%);
+      background: linear-gradient(160deg, #f5fdfe 0%, #edf9fb 50%, #f3edff 100%);
       position:relative; overflow:hidden; padding:20px;
     }
     .grain {
       position:absolute; inset:0; pointer-events:none; opacity:.4;
-      background-image: radial-gradient(circle at 1px 1px, rgba(167,139,250,0.08) 1px, transparent 0);
+      background-image: radial-gradient(circle at 1px 1px, rgba(0,180,198,0.08) 1px, transparent 0);
       background-size: 28px 28px;
     }
     .orb { position:absolute; pointer-events:none; }
-    .orb1 { width:460px;height:460px;background:radial-gradient(circle, rgba(167,139,250,.32), transparent 70%);filter:blur(70px);top:-160px;right:-140px; }
-    .orb2 { width:380px;height:380px;background:radial-gradient(circle, rgba(251,114,153,.26), transparent 70%);filter:blur(70px);bottom:-120px;left:-110px;animation-delay:-5s; }
+    .orb1 { width:460px;height:460px;background:radial-gradient(circle, rgba(0,180,198,.32), transparent 70%);filter:blur(70px);top:-160px;right:-140px; }
+    .orb2 { width:380px;height:380px;background:radial-gradient(circle, rgba(0,168,188,.26), transparent 70%);filter:blur(70px);bottom:-120px;left:-110px;animation-delay:-5s; }
     .orb3 { width:260px;height:260px;background:radial-gradient(circle, rgba(255,199,218,.4), transparent 70%);filter:blur(60px);top:46%;right:38%;animation-delay:-9s; }
 
     .card {
       position:relative; z-index:1; width:100%; max-width:440px;
       background:rgba(255,255,255,.72); backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%);
       border:1px solid rgba(255,255,255,.6); border-radius:32px; padding:40px 36px;
-      box-shadow:0 32px 80px rgba(167,139,250,.22), inset 0 1px 0 rgba(255,255,255,.6);
+      box-shadow:0 32px 80px rgba(0,180,198,.22), inset 0 1px 0 rgba(255,255,255,.6);
     }
     .logo {
       width:54px;height:54px;border-radius:18px;
-      background:linear-gradient(135deg,#a78bfa,#fb7299);
+      background:linear-gradient(135deg,#00B4C6,#00A8BC);
       display:flex;align-items:center;justify-content:center;
-      box-shadow:0 10px 30px rgba(167,139,250,.5);
+      box-shadow:0 10px 30px rgba(0,180,198,.5);
     }
-    .title { font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:700;color:#221f2c;margin:0 0 6px;letter-spacing:-.01em; }
-    .gt { background:linear-gradient(135deg,#a78bfa,#fb7299);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-flow 5s linear infinite; }
-    .subtitle { font-size:13px;color:#948da3;margin:0; }
+    .title { font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:700;color:#1a2d3a;margin:0 0 6px;letter-spacing:-.01em; }
+    .gt { background:linear-gradient(135deg,#00B4C6,#00A8BC);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-flow 5s linear infinite; }
+    .subtitle { font-size:13px;color:#5a7a8a;margin:0; }
 
     .err-banner, .ok-banner { display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:14px;font-size:13px; }
     .err-banner { background:rgba(242,92,120,.08);border:1px solid rgba(242,92,120,.22);color:#f25c78; }
@@ -117,29 +117,29 @@ import { AuthService } from '../../../core/services/auth';
 
     .form { display:flex;flex-direction:column;gap:16px; }
     .field { display:flex;flex-direction:column;gap:6px; }
-    .field label { font-size:12px;font-weight:600;color:#948da3;letter-spacing:.04em;text-transform:uppercase; }
+    .field label { font-size:12px;font-weight:600;color:#5a7a8a;letter-spacing:.04em;text-transform:uppercase; }
     .field input, .field select {
-      width:100%; padding:12px 15px; border-radius:14px; background:#f8f1fc;
-      border:1px solid rgba(167,139,250,.16); color:#221f2c; font-size:14px; font-family:inherit;
+      width:100%; padding:12px 15px; border-radius:14px; background:#e0f6f9;
+      border:1px solid rgba(0,180,198,.16); color:#1a2d3a; font-size:14px; font-family:inherit;
       outline:none; transition:all .25s cubic-bezier(.16,1,.3,1); box-sizing:border-box; appearance:none;
     }
     .field select { cursor:pointer; }
-    .field input:focus, .field select:focus { border-color:#a78bfa;background:#fff;box-shadow:0 0 0 4px rgba(167,139,250,.16); }
+    .field input:focus, .field select:focus { border-color:#00B4C6;background:#fff;box-shadow:0 0 0 4px rgba(0,180,198,.16); }
 
     .btn-primary {
-      padding:14px;border-radius:999px;background:linear-gradient(135deg,#a78bfa,#fb7299);border:none;color:white;
+      padding:14px;border-radius:999px;background:linear-gradient(135deg,#00B4C6,#00A8BC);border:none;color:white;
       font-size:15px;font-weight:700;cursor:pointer;transition:all .3s cubic-bezier(.16,1,.3,1);font-family:inherit;
       display:flex;align-items:center;justify-content:center;gap:8px;height:48px;
-      box-shadow:0 12px 36px rgba(167,139,250,.35); margin-top:2px;
+      box-shadow:0 12px 36px rgba(0,180,198,.35); margin-top:2px;
     }
-    .btn-primary:hover:not(:disabled) { box-shadow:0 16px 44px rgba(167,139,250,.45);transform:translateY(-2px); }
+    .btn-primary:hover:not(:disabled) { box-shadow:0 16px 44px rgba(0,180,198,.45);transform:translateY(-2px); }
     .btn-primary:disabled { opacity:.5;cursor:not-allowed; }
     .spin { animation:sp .8s linear infinite; }
     @keyframes sp { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
-    .back { text-align:center;margin:22px 0 0;font-size:13px;color:#948da3; }
-    .link { font-size:13px;color:#a78bfa;text-decoration:none;font-weight:700;margin-left:4px; }
-    .link:hover { color:#fb7299; }
+    .back { text-align:center;margin:22px 0 0;font-size:13px;color:#5a7a8a; }
+    .link { font-size:13px;color:#00B4C6;text-decoration:none;font-weight:700;margin-left:4px; }
+    .link:hover { color:#00A8BC; }
   `],
 })
 export class Register {

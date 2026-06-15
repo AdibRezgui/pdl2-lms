@@ -1,5 +1,8 @@
 package com.eduai.lms.security;
 
+import com.eduai.lms.model.enums.EventSeverity;
+import com.eduai.lms.model.enums.EventType;
+import com.eduai.lms.service.SecurityEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -29,6 +32,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${app.rate-limit.refill-per-minute:30}")
     private int refillPerMinute;
 
+    private final SecurityEventService securityEventService;
+
+    public RateLimitFilter(SecurityEventService securityEventService) {
+        this.securityEventService = securityEventService;
+    }
+
     private final Cache<String, AtomicInteger> requestCounts = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .maximumSize(10_000)
@@ -52,6 +61,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (count.incrementAndGet() > capacity) {
             log.warn("Rate limit exceeded for IP {} on path {}", key, path);
+            securityEventService.record(
+                    EventType.BRUTE_FORCE, EventSeverity.HIGH,
+                    key, path, req.getMethod(),
+                    count.get() + " tentatives en 1 min depuis " + key,
+                    req.getHeader("User-Agent"));
             res.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             res.setContentType(MediaType.APPLICATION_JSON_VALUE);
             res.setHeader("Retry-After", "60");

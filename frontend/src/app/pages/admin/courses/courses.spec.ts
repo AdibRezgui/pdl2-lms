@@ -41,7 +41,7 @@ describe('AdminCourses', () => {
     http = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
-    http.expectOne('/api/admin/courses').flush(mockCourses);
+    http.expectOne('/api/admin/courses').flush({ success: true, message: 'OK', data: mockCourses });
     fixture.detectChanges();
   });
 

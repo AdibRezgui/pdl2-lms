@@ -1,16 +1,21 @@
-# ─── Stage 1: Build Angular ────────────────────────────────────────────────────
+# ─── Stage 1: Build Angular ──────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Quel projet builder : "frontend" (defaut) ou "admin"
+ARG PROJECT=frontend
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build -- --configuration production
+RUN npx ng build --project ${PROJECT} --configuration production
 
-# ─── Stage 2: Serve with Nginx ────────────────────────────────────────────────
+# ─── Stage 2: Serve with Nginx ───────────────────────────────────────────────
 FROM nginx:alpine
-COPY --from=builder /app/dist/frontend/browser /usr/share/nginx/html
+ARG PROJECT=frontend
+
+COPY --from=builder /app/dist/${PROJECT}/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80

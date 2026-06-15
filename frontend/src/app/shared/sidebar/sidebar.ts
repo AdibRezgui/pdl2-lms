@@ -22,7 +22,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
     <aside @fadeSlide class="sidebar">
       <!-- Logo -->
       <div class="sidebar-logo">
-        <img src="logo-sip.svg" alt="Smart IT Partner" class="company-logo"
+        <img src="logo-sip.jpg" alt="Smart IT Partner" class="company-logo"
              [style.display]="logoFailed ? 'none' : 'block'"
              (error)="logoFailed = true" />
         <div class="logo-fallback" [style.display]="logoFailed ? 'flex' : 'none'">
@@ -32,7 +32,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
             </svg>
           </div>
           <div>
-            <p class="logo-name">EduAI</p>
+            <p class="logo-name">Smart IT Partner</p>
             <p class="logo-role">{{ roleLabel }}</p>
           </div>
         </div>
@@ -79,8 +79,8 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       height: 100vh;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, #fffdfb 0%, #fdf2f8 100%);
-      border-right: 1px solid rgba(167,139,250,0.14);
+      background: linear-gradient(180deg, #f5fdfe 0%, #e8f8fb 100%);
+      border-right: 1px solid rgba(0,180,198,0.14);
       position: sticky;
       top: 0;
       overflow: hidden;
@@ -89,35 +89,42 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
     .sidebar-logo {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 22px 20px 18px;
-      border-bottom: 1px solid rgba(167,139,250,0.10);
+      justify-content: center;
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid rgba(0,180,198,0.10);
     }
 
     .logo-mark {
       width: 40px;
       height: 40px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #a78bfa, #fb7299);
+      background: linear-gradient(135deg, #00B4C6, #007A8A);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 6px 20px rgba(167,139,250,0.45);
+      box-shadow: 0 6px 20px rgba(0,180,198,0.45);
       transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
     }
     .sidebar-logo:hover .logo-mark { transform: rotate(-8deg) scale(1.06); }
 
     .company-logo {
-      height: 44px;
+      height: 72px;
       width: auto;
-      max-width: 200px;
+      max-width: 210px;
       object-fit: contain;
+      border-radius: 10px;
+      filter: drop-shadow(0 4px 12px rgba(0,180,198,0.15));
+      transition: filter 0.3s ease;
+    }
+    .company-logo:hover {
+      filter: drop-shadow(0 6px 18px rgba(0,180,198,0.28));
     }
 
     .logo-fallback {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
     }
 
@@ -132,7 +139,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       font-family: 'Fraunces', Georgia, serif;
       font-size: 16px;
       font-weight: 700;
-      color: #221f2c;
+      color: #1a2d3a;
       margin: 0;
       line-height: 1.2;
       letter-spacing: -0.01em;
@@ -140,7 +147,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
 
     .logo-role {
       font-size: 11px;
-      color: #948da3;
+      color: #5a7a8a;
       margin: 0;
       text-transform: capitalize;
     }
@@ -159,7 +166,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #c4bdd6;
+      color: #8aaabb;
       margin: 0 10px 10px;
     }
 
@@ -170,7 +177,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       padding: 10px 14px;
       border-radius: 14px;
       border: 1px solid transparent;
-      color: #948da3;
+      color: #5a7a8a;
       font-size: 13.5px;
       font-weight: 500;
       text-decoration: none;
@@ -178,19 +185,19 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       cursor: pointer;
 
       &:hover {
-        color: #4a4458;
-        background: rgba(167,139,250,0.08);
-        border-color: rgba(167,139,250,0.14);
+        color: #2c3d4e;
+        background: rgba(0,180,198,0.08);
+        border-color: rgba(0,180,198,0.14);
         transform: translateX(3px);
       }
     }
 
     .nav-active {
-      color: #7c3aed !important;
-      background: linear-gradient(135deg, rgba(167,139,250,0.16), rgba(251,114,153,0.10)) !important;
-      border-color: rgba(167,139,250,0.28) !important;
+      color: #007A8A !important;
+      background: linear-gradient(135deg, rgba(0,180,198,0.16), rgba(0,122,138,0.10)) !important;
+      border-color: rgba(0,180,198,0.28) !important;
       font-weight: 700 !important;
-      box-shadow: 0 4px 16px rgba(167,139,250,0.16);
+      box-shadow: 0 4px 16px rgba(0,180,198,0.16);
 
       .nav-icon { filter: none; opacity: 1; transform: scale(1.08); }
     }
@@ -210,7 +217,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
 
     .sidebar-footer {
       padding: 14px;
-      border-top: 1px solid rgba(167,139,250,0.10);
+      border-top: 1px solid rgba(0,180,198,0.10);
       display: flex;
       flex-direction: column;
       gap: 9px;
@@ -223,14 +230,14 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       padding: 11px 13px;
       border-radius: 16px;
       background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(167,139,250,0.14);
+      border: 1px solid rgba(0,180,198,0.14);
       transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
 
       &:hover {
         background: #ffffff;
-        border-color: rgba(167,139,250,0.3);
+        border-color: rgba(0,180,198,0.3);
         transform: translateY(-1px);
-        box-shadow: 0 8px 24px rgba(167,139,250,0.18);
+        box-shadow: 0 8px 24px rgba(0,180,198,0.18);
       }
     }
 
@@ -238,7 +245,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       width: 36px;
       height: 36px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #a78bfa, #fb7299);
+      background: linear-gradient(135deg, #00B4C6, #007A8A);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -246,7 +253,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       font-weight: 800;
       color: #ffffff;
       flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(167,139,250,0.4);
+      box-shadow: 0 4px 14px rgba(0,180,198,0.4);
     }
 
     .user-info { flex: 1; min-width: 0; }
@@ -254,7 +261,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
     .user-name {
       font-size: 13px;
       font-weight: 700;
-      color: #221f2c;
+      color: #1a2d3a;
       margin: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -263,7 +270,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
 
     .user-role {
       font-size: 11px;
-      color: #948da3;
+      color: #5a7a8a;
       margin: 0;
       text-transform: capitalize;
     }
@@ -278,7 +285,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
       border-radius: 14px;
       border: 1px solid transparent;
       background: transparent;
-      color: #948da3;
+      color: #5a7a8a;
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
@@ -294,7 +301,7 @@ interface NavItem { label: string; path: string; icon: string; exact?: boolean }
     }
 
     .gradient-text {
-      background: linear-gradient(135deg, #a78bfa, #fb7299);
+      background: linear-gradient(135deg, #00B4C6, #007A8A);
       background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -335,7 +342,7 @@ export class Sidebar {
       { label: 'Tableau de bord', path: '/student/dashboard',   icon: svg('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>') },
       { label: 'Mes cours',       path: '/student/courses',     icon: svg('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>') },
       { label: 'Progression',     path: '/student/progress',    icon: svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>') },
-      { label: 'Évaluations',     path: '/student/evaluations', icon: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>') },
+      { label: 'Mes Badges',      path: '/student/evaluations', icon: svg('<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>') },
       { label: 'Mon Parcours',    path: '/student/parcours',    icon: svg('<path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h11"/>') },
       { label: 'Certificats',     path: '/student/certificates',icon: svg('<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>') },
       { label: 'Assistant IA',    path: '/student/chat',        icon: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>') },
@@ -351,8 +358,10 @@ export class Sidebar {
     const adminNav: NavItem[] = [
       { label: 'Tableau de bord', path: '/admin/dashboard', icon: svg('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>') },
       { label: 'Utilisateurs',    path: '/admin/users',     icon: svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>') },
-      { label: 'Validation cours', path: '/admin/courses',  icon: svg('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="9 11 12 14 16 9"/>') },
-      { label: 'Analytics',        path: '/admin/analytics', icon: svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>') },
+      { label: 'Cours',           path: '/admin/courses',  icon: svg('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>') },
+      { label: 'Analytics',        path: '/admin/analytics',   icon: svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>') },
+      { label: 'Monitoring',       path: '/admin/monitoring',  icon: svg('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>') },
+      { label: 'Sécurité',         path: '/admin/security',    icon: svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>') },
     ];
 
     if (this.role === 'TRAINER') return trainerNav;

@@ -8,6 +8,7 @@ __pycache__/
 .env
 .env.local
 uploads-dev/
+backend/data/
 
 *_tok.json
 h2cookies.txt

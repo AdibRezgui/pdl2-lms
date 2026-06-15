@@ -48,13 +48,16 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 50MB
-      max-request-size: 52MB
+      max-file-size: 200MB
+      max-request-size: 205MB
 
 server:
   port: ${PORT:8080}
   servlet:
     context-path: /api
+  tomcat:
+    max-http-form-post-size: 200MB
+    max-swallow-size: 200MB
 
 app:
   jwt:

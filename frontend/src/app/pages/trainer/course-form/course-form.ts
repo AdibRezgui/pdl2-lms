@@ -17,16 +17,16 @@ interface CourseFormData {
   standalone: true,
   imports: [CommonModule, FormsModule, Sidebar],
   template: `
-    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#fffdfb 0%,#fdf2f8 60%,#f6f0ff 100%)">
+    <div class="flex h-screen overflow-hidden" style="background:linear-gradient(160deg,#f5fdfe 0%,#edf9fb 60%,#daf2f6 100%)">
       <app-sidebar [role]="role" [userName]="userName"></app-sidebar>
       <main class="flex-1 overflow-y-auto p-7">
 
         <!-- Header -->
         <div class="mb-6 reveal">
-          <h1 class="font-display text-2xl font-bold" style="color:#221f2c">
+          <h1 class="font-display text-2xl font-bold" style="color:#1a2d3a">
             {{ isEdit ? 'Modifier le cours' : 'Créer un nouveau cours' }}
           </h1>
-          <p class="text-sm mt-0.5" style="color:#948da3">
+          <p class="text-sm mt-0.5" style="color:#5a7a8a">
             {{ isEdit ? 'Mettez à jour les informations du cours' : 'Remplissez les informations, puis ajoutez vos leçons et fichiers' }}
           </p>
         </div>
@@ -51,7 +51,7 @@ interface CourseFormData {
 
         <!-- Info banner -->
         <div *ngIf="!isEdit" class="info-banner reveal stagger-2 mb-5">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b6ef2" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0099AE" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span>Après avoir créé le cours, vous serez automatiquement redirigé vers l'éditeur de contenu pour ajouter vos <strong>modules</strong>, <strong>leçons</strong> et <strong>fichiers</strong> (vidéos, PDF).</span>
         </div>
 
@@ -81,7 +81,7 @@ interface CourseFormData {
                   <div class="thumb-zone" (click)="thumbInput.click()" [class.uploading]="uploadingThumb()">
                     <input #thumbInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onThumbFile($event)" />
                     <div *ngIf="!uploadingThumb()">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00B4C6" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                       <span>Cliquez pour uploader</span>
                       <span class="hint">JPG, PNG, WebP — max 5 Mo</span>
                     </div>
@@ -115,21 +115,6 @@ interface CourseFormData {
                 placeholder="Décrivez ce que les stagiaires vont apprendre, les prérequis, les objectifs..."></textarea>
             </div>
 
-            <!-- Catégorie -->
-            <div>
-              <label class="form-label">Domaine / Catégorie *</label>
-              <div class="cat-grid">
-                <button *ngFor="let c of categories" type="button"
-                  class="cat-btn"
-                  [class.cat-selected]="form.category === c.value"
-                  (click)="form.category = c.value">
-                  <span class="cat-icon">{{ c.icon }}</span>
-                  <span class="cat-label">{{ c.label }}</span>
-                </button>
-              </div>
-              <input type="hidden" [(ngModel)]="form.category" name="category" required />
-            </div>
-
             <!-- Niveau -->
             <div>
               <label class="form-label">Niveau cible</label>
@@ -153,8 +138,8 @@ interface CourseFormData {
             <!-- Publier -->
             <div class="publish-row">
               <div class="publish-info">
-                <p class="text-sm font-semibold" style="color:#221f2c">Publier maintenant</p>
-                <p class="text-xs" style="color:#948da3">Le cours sera visible par les stagiaires dès sa création</p>
+                <p class="text-sm font-semibold" style="color:#1a2d3a">Publier maintenant</p>
+                <p class="text-xs" style="color:#5a7a8a">Le cours sera visible par les stagiaires dès sa création</p>
               </div>
               <label class="toggle">
                 <input type="checkbox" [(ngModel)]="form.published" name="published" />
@@ -167,7 +152,7 @@ interface CourseFormData {
               <button type="button" (click)="router.navigate(['/trainer/courses'])" class="btn-secondary flex-1 justify-center">
                 Annuler
               </button>
-              <button type="submit" [disabled]="saving() || !form.category" class="btn-primary flex-1 justify-center">
+              <button type="submit" [disabled]="saving()" class="btn-primary flex-1 justify-center">
                 <svg *ngIf="saving()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                 {{ saving() ? 'Enregistrement...' : (isEdit ? 'Mettre à jour' : 'Créer et ajouter le contenu') }}
               </button>
@@ -179,72 +164,72 @@ interface CourseFormData {
     </div>
   `,
   styles: [`
-    .form-label { display:block; font-size:12px; font-weight:600; color:#948da3; letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px; }
+    .form-label { display:block; font-size:12px; font-weight:600; color:#5a7a8a; letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px; }
     .err-banner { padding:11px 16px; border-radius:14px; background:rgba(242,92,120,.08); border:1px solid rgba(242,92,120,.22); color:#f25c78; font-size:13px; }
     .ok-banner { display:flex; align-items:center; gap:8px; padding:11px 16px; border-radius:14px; background:rgba(110,231,183,.12); border:1px solid rgba(110,231,183,.3); color:#1f9d6f; font-size:13px; }
 
     /* Steps */
-    .steps-bar { display:flex; align-items:center; gap:0; padding:16px 20px; border-radius:18px; background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.14); }
+    .steps-bar { display:flex; align-items:center; gap:0; padding:16px 20px; border-radius:18px; background:rgba(0,180,198,.06); border:1px solid rgba(0,180,198,.14); }
     .step { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-    .step-circle { width:28px; height:28px; border-radius:50%; background:rgba(167,139,250,.14); border:2px solid rgba(167,139,250,.25); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#948da3; }
-    .step span { font-size:12px; font-weight:600; color:#948da3; }
-    .step.active .step-circle { background:linear-gradient(135deg,#a78bfa,#fb7299); border-color:transparent; color:white; box-shadow:0 4px 12px rgba(167,139,250,.4); }
-    .step.active span { color:#221f2c; }
-    .step-line { flex:1; height:2px; background:rgba(167,139,250,.18); margin:0 10px; }
+    .step-circle { width:28px; height:28px; border-radius:50%; background:rgba(0,180,198,.14); border:2px solid rgba(0,180,198,.25); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#5a7a8a; }
+    .step span { font-size:12px; font-weight:600; color:#5a7a8a; }
+    .step.active .step-circle { background:linear-gradient(135deg,#00B4C6,#00A8BC); border-color:transparent; color:white; box-shadow:0 4px 12px rgba(0,180,198,.4); }
+    .step.active span { color:#1a2d3a; }
+    .step-line { flex:1; height:2px; background:rgba(0,180,198,.18); margin:0 10px; }
 
     /* Info banner */
-    .info-banner { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-radius:14px; background:rgba(167,139,250,.07); border:1px solid rgba(167,139,250,.2); font-size:13px; color:#4a4458; line-height:1.5; }
-    .info-banner strong { color:#7c5ce0; }
+    .info-banner { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-radius:14px; background:rgba(0,180,198,.07); border:1px solid rgba(0,180,198,.2); font-size:13px; color:#2c3d4e; line-height:1.5; }
+    .info-banner strong { color:#007A8A; }
 
     /* Category grid */
     .cat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    .cat-btn { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:13px; border:1.5px solid rgba(167,139,250,.18); background:rgba(167,139,250,.04); cursor:pointer; transition:all .18s; text-align:left; font-family:inherit; }
-    .cat-btn:hover { background:rgba(167,139,250,.1); border-color:rgba(167,139,250,.3); }
-    .cat-btn.cat-selected { background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(251,114,153,.1)); border-color:rgba(167,139,250,.5); box-shadow:0 2px 10px rgba(167,139,250,.18); }
+    .cat-btn { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:13px; border:1.5px solid rgba(0,180,198,.18); background:rgba(0,180,198,.04); cursor:pointer; transition:all .18s; text-align:left; font-family:inherit; }
+    .cat-btn:hover { background:rgba(0,180,198,.1); border-color:rgba(0,180,198,.3); }
+    .cat-btn.cat-selected { background:linear-gradient(135deg,rgba(0,180,198,.18),rgba(0,168,188,.1)); border-color:rgba(0,180,198,.5); box-shadow:0 2px 10px rgba(0,180,198,.18); }
     .cat-icon { font-size:18px; flex-shrink:0; }
-    .cat-label { font-size:12px; font-weight:600; color:#221f2c; line-height:1.3; }
-    .cat-btn.cat-selected .cat-label { color:#7c5ce0; }
+    .cat-label { font-size:12px; font-weight:600; color:#1a2d3a; line-height:1.3; }
+    .cat-btn.cat-selected .cat-label { color:#007A8A; }
 
     /* Level group */
     .level-group { display:flex; gap:6px; }
-    .level-btn { flex:1; padding:8px 4px; border-radius:10px; border:1.5px solid rgba(167,139,250,.18); background:rgba(167,139,250,.04); font-size:11px; font-weight:600; color:#948da3; cursor:pointer; transition:all .18s; font-family:inherit; }
-    .level-btn:hover { background:rgba(167,139,250,.1); }
-    .level-btn.level-selected { background:linear-gradient(135deg,rgba(167,139,250,.2),rgba(251,114,153,.12)); border-color:rgba(167,139,250,.45); color:#7c5ce0; }
+    .level-btn { flex:1; padding:8px 4px; border-radius:10px; border:1.5px solid rgba(0,180,198,.18); background:rgba(0,180,198,.04); font-size:11px; font-weight:600; color:#5a7a8a; cursor:pointer; transition:all .18s; font-family:inherit; }
+    .level-btn:hover { background:rgba(0,180,198,.1); }
+    .level-btn.level-selected { background:linear-gradient(135deg,rgba(0,180,198,.2),rgba(0,168,188,.12)); border-color:rgba(0,180,198,.45); color:#007A8A; }
 
     /* Price */
     .price-wrap { position:relative; }
-    .price-sym { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; color:#948da3; z-index:1; }
+    .price-sym { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:700; color:#5a7a8a; z-index:1; }
     .price-input { padding-left:44px !important; }
 
     /* Publish toggle */
-    .publish-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-radius:14px; background:rgba(167,139,250,.05); border:1px solid rgba(167,139,250,.12); }
+    .publish-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-radius:14px; background:rgba(0,180,198,.05); border:1px solid rgba(0,180,198,.12); }
     .toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
     .toggle input { opacity:0; width:0; height:0; position:absolute; }
-    .toggle-track { position:absolute; inset:0; border-radius:99px; background:rgba(167,139,250,.2); transition:all .25s; cursor:pointer; }
+    .toggle-track { position:absolute; inset:0; border-radius:99px; background:rgba(0,180,198,.2); transition:all .25s; cursor:pointer; }
     .toggle-track::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:white; transition:all .25s; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-    .toggle input:checked ~ .toggle-track { background:linear-gradient(135deg,#a78bfa,#fb7299); }
+    .toggle input:checked ~ .toggle-track { background:linear-gradient(135deg,#00B4C6,#00A8BC); }
     .toggle input:checked ~ .toggle-track::after { transform:translateX(20px); }
 
     /* Spinner */
     @keyframes spin { to { transform:rotate(360deg); } }
     .spin { animation:spin .8s linear infinite; }
 
-    .ai-btn { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:10px; background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(251,114,153,.12)); border:1px solid rgba(167,139,250,.3); color:#8b6ef2; font-size:12px; font-weight:600; cursor:pointer; transition:all .22s; font-family:inherit; }
-    .ai-btn:hover:not(:disabled) { background:linear-gradient(135deg,rgba(167,139,250,.28),rgba(251,114,153,.2)); }
+    .ai-btn { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:10px; background:linear-gradient(135deg,rgba(0,180,198,.18),rgba(0,168,188,.12)); border:1px solid rgba(0,180,198,.3); color:#0099AE; font-size:12px; font-weight:600; cursor:pointer; transition:all .22s; font-family:inherit; }
+    .ai-btn:hover:not(:disabled) { background:linear-gradient(135deg,rgba(0,180,198,.28),rgba(0,168,188,.2)); }
     .ai-btn:disabled { opacity:.6; cursor:default; }
     .thumb-upload-row { display:flex; gap:14px; align-items:stretch; }
-    .thumb-preview { width:120px; height:80px; flex-shrink:0; border-radius:14px; background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(251,114,153,.12)); border:1.5px dashed rgba(167,139,250,.3); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background-size:cover; background-position:center; }
-    .thumb-preview.has-img { border-style:solid; border-color:rgba(167,139,250,.4); }
+    .thumb-preview { width:120px; height:80px; flex-shrink:0; border-radius:14px; background:linear-gradient(135deg,rgba(0,180,198,.18),rgba(0,168,188,.12)); border:1.5px dashed rgba(0,180,198,.3); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background-size:cover; background-position:center; }
+    .thumb-preview.has-img { border-style:solid; border-color:rgba(0,180,198,.4); }
     .thumb-placeholder { display:flex; align-items:center; justify-content:center; }
     .thumb-clear { position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:6px; background:rgba(0,0,0,.5); border:none; color:white; cursor:pointer; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; line-height:1; }
     .thumb-right { flex:1; }
-    .thumb-zone { border:1.5px dashed rgba(167,139,250,.3); border-radius:14px; padding:14px 16px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; text-align:center; height:80px; transition:all .22s; font-size:12px; color:#948da3; }
-    .thumb-zone:hover { border-color:rgba(167,139,250,.6); background:rgba(167,139,250,.04); color:#7c5ce0; }
-    .thumb-zone.uploading { border-color:#a78bfa; background:rgba(167,139,250,.06); cursor:default; }
+    .thumb-zone { border:1.5px dashed rgba(0,180,198,.3); border-radius:14px; padding:14px 16px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; text-align:center; height:80px; transition:all .22s; font-size:12px; color:#5a7a8a; }
+    .thumb-zone:hover { border-color:rgba(0,180,198,.6); background:rgba(0,180,198,.04); color:#007A8A; }
+    .thumb-zone.uploading { border-color:#00B4C6; background:rgba(0,180,198,.06); cursor:default; }
     .thumb-zone span { font-weight:600; }
     .thumb-zone .hint { font-size:11px; font-weight:400; color:#c4bdd6; }
     .uploading-inner { display:flex; align-items:center; gap:8px; }
-    .mini-spinner { width:16px; height:16px; border:2px solid rgba(167,139,250,.3); border-top-color:#a78bfa; border-radius:50%; animation:spin .8s linear infinite; }
+    .mini-spinner { width:16px; height:16px; border:2px solid rgba(0,180,198,.3); border-top-color:#00B4C6; border-radius:50%; animation:spin .8s linear infinite; }
     .hidden { display:none; }
   `],
 })
@@ -257,18 +242,6 @@ export class CourseForm implements OnInit {
   courseId: string | null = null;
 
   form: CourseFormData = { title: '', description: '', category: '', level: 'BEGINNER', price: 0, tags: '', published: false, thumbnail: '' };
-
-  categories = [
-    { value: 'Développement Web',      label: 'Développement Web',      icon: '🌐' },
-    { value: 'Développement Mobile',   label: 'Dev Mobile',              icon: '📱' },
-    { value: 'Data Science',           label: 'Data Science',            icon: '📊' },
-    { value: 'Intelligence Artificielle', label: 'Intelligence Artificielle', icon: '🤖' },
-    { value: 'DevOps',                 label: 'DevOps & Cloud',          icon: '☁️' },
-    { value: 'Cybersécurité',          label: 'Cybersécurité',           icon: '🔒' },
-    { value: 'Design UX/UI',           label: 'Design UX/UI',            icon: '🎨' },
-    { value: 'Management',             label: 'Management',              icon: '📋' },
-    { value: 'Marketing Digital',      label: 'Marketing Digital',       icon: '📣' },
-  ];
 
   levels = [
     { value: 'BEGINNER',     label: 'Débutant' },
@@ -289,12 +262,17 @@ export class CourseForm implements OnInit {
       this.api.get<any>(`/courses/${id}`).subscribe({
         next: data => {
           this.form = {
-            title: data.title ?? '', description: data.description ?? '',
-            category: data.category ?? '', level: data.level ?? 'BEGINNER',
-            price: data.price ?? 0, tags: (data.tags ?? []).join(', '), published: data.published ?? false,
+            title: data.title ?? '',
+            description: data.description ?? '',
+            category: data.category ?? '',
+            level: data.level ?? 'BEGINNER',
+            price: data.price ?? 0,
+            tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags ?? ''),
+            published: data.published ?? false,
             thumbnail: data.thumbnail ?? '',
           };
         },
+        error: () => { this.error.set('Impossible de charger les données du cours.'); },
       });
     }
   }
@@ -314,17 +292,27 @@ export class CourseForm implements OnInit {
 
   generateDescription() {
     const topic = this.form.title.trim();
-    if (!topic) { this.error.set('Saisissez le titre du cours pour que IA puisse générer une description.'); return; }
+    if (!topic) { this.error.set('Saisissez le titre du cours pour que l\'IA puisse générer une description.'); return; }
     this.generatingDesc.set(true);
     this.error.set('');
-    this.api.post<any>('/ai/generate-summary', { topic, level: this.form.level }).subscribe({
-      next: res => { this.form.description = res?.summary ?? ''; this.generatingDesc.set(false); },
+    const levelMap: Record<string, string> = {
+      'BEGINNER': 'Débutant', 'INTERMEDIATE': 'Intermédiaire', 'ADVANCED': 'Avancé',
+    };
+    const level = levelMap[this.form.level] ?? this.form.level;
+    this.api.post<any>('/ai/generate-summary', { topic, level }).subscribe({
+      next: res => {
+        if (res?.error || !res?.summary) {
+          this.error.set('Service IA temporairement indisponible. Réessayez dans quelques instants.');
+        } else {
+          this.form.description = res.summary;
+        }
+        this.generatingDesc.set(false);
+      },
       error: () => { this.error.set('Service IA indisponible. Réessayez plus tard.'); this.generatingDesc.set(false); },
     });
   }
 
   save() {
-    if (!this.form.category) { this.error.set('Veuillez sélectionner un domaine pour le cours.'); return; }
     this.saving.set(true); this.error.set(''); this.saved.set(false);
     const payload = { ...this.form, tags: this.form.tags.split(',').map(t => t.trim()).filter(Boolean) };
     const req = this.courseId

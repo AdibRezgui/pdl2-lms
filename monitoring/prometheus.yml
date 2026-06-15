@@ -37,3 +37,11 @@ scrape_configs:
       - targets: ['ai-service:8000']
         labels:
           service: 'ai-service'
+
+  # cAdvisor (metriques conteneurs Docker)
+  - job_name: 'cadvisor'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'docker-containers'

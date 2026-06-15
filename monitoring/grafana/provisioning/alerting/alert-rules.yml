@@ -1,0 +1,122 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Alertes Conteneurs Docker
+    folder: Infrastructure
+    interval: 1m
+    rules:
+
+      # ── Règle 1 : CPU conteneur élevé ──────────────────────────────────────
+      - uid: alert-cpu-high
+        title: "CPU conteneur élevé"
+        condition: B
+        data:
+          # Requête Prometheus : usage CPU en % par conteneur (moyenne sur 1 min)
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-main
+            model:
+              editorMode: code
+              expr: "sum(rate(container_cpu_usage_seconds_total{name!=''}[1m])) by (name) * 100"
+              instant: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          # Expression seuil : A > 80
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: "-100"
+            model:
+              conditions:
+                - evaluator:
+                    params: [80]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: "-100"
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: warning
+          type: cpu
+        annotations:
+          summary: "CPU élevé — conteneur {{ $labels.name }}"
+          description: >
+            Le conteneur {{ $labels.name }} dépasse 80 % d'utilisation CPU
+            depuis plus de 2 minutes. Valeur actuelle : {{ $values.A.Value | printf "%.1f" }} %.
+            Vérifiez les logs et envisagez un redimensionnement.
+
+      # ── Règle 2 : RAM conteneur élevée ────────────────────────────────────
+      - uid: alert-ram-high
+        title: "RAM conteneur élevée"
+        condition: B
+        data:
+          # Requête Prometheus : consommation mémoire en octets par conteneur
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-main
+            model:
+              editorMode: code
+              expr: "sum(container_memory_usage_bytes{name!=''}) by (name)"
+              instant: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: true
+              refId: A
+          # Expression seuil : A > 2 Go (2 147 483 648 octets)
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: "-100"
+            model:
+              conditions:
+                - evaluator:
+                    params: [2147483648]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: "-100"
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 3m
+        labels:
+          severity: warning
+          type: ram
+        annotations:
+          summary: "RAM élevée — conteneur {{ $labels.name }}"
+          description: >
+            Le conteneur {{ $labels.name }} consomme plus de 2 Go de RAM
+            depuis plus de 3 minutes. Valeur actuelle : {{ $values.A.Value | printf "%.0f" }} octets.
+            Vérifiez les fuites mémoire ou augmentez la limite du conteneur.
